@@ -13,17 +13,18 @@ def get_delta_t(row):
     return act
 
 
-# preprocessed dataset
+# defines path for raw deezer dataset
 data_path = "data/new_release_stream.csv"
 
+# read deezer dataset into pandas datafra,e and sort dataframe by timestamp column (smallest timestamp on top)
 df = pd.read_csv(data_path)
 df = df.sort_values(by="timestamp", ascending=True)
 
 
 # collect each user's listening history
-df["activations"] = df["timestamp"]
-df.loc[df.y == 0, "activations"] = 99  # if the item was not consumed, the timestamp does not enter the history
-df["activations"] = df["activations"].apply(lambda x: [int(x)])
+df["activations"] = df["timestamp"] # create new column "activations" and set to the timestamps
+df.loc[df.y == 0, "activations"] = 99  # if the item was not consumed, the timestamp does not enter the history (activation column is set to 99 in that row)
+df["activations"] = df["activations"].apply(lambda x: [int(x)]) # makes each value to a list, e.g. if "activations" = 99 at a point, this function converts it to "activations" = [99]
 df["activations"] = df.groupby(["userId", "itemId"], group_keys=False)["activations"].apply(lambda x: x.cumsum())
 
 df["relational_interval"] = df.apply(get_delta_t, axis=1)

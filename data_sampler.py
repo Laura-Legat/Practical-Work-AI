@@ -6,9 +6,10 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+# set random seed for reproducibility
 random.seed(123)
 
-
+# implements a custom dataset class which inherits from pytorch's Dataset class
 class InteractionDataset(Dataset):
     """Wrapper, convert <user, item, rel_int, neg_item> Tensor into Pythorch Dataset"""
 
