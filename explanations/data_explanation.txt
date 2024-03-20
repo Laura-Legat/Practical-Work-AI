@@ -1,0 +1,23 @@
+new_release_stream.csv
+
+Every line corresponds to one exposure of a user to a track
+
+Columns:
+
+userId = anonymized user identifier
+itemId = anonymized item identifier
+timestamp = timestamp in s (measured from first consumption in the dataset) -> from which point in time is this measured?
+y = whether track was listened to for more than 80% (y=1) or not (y=0)
+
+
+preprocessed.csv
+
+28,60,188807,1,[0.0],train
+
+This line represents a single interaction event from the preprocessed dataset.
+userId: 28
+itemId: 60
+timestamp: 188807
+y: 1 (indicating that the item was consumed)
+relational_interval: [0.0] (the time interval between this interaction and the previous one, in hours)
+set: train (indicating that this interaction belongs to the training set)

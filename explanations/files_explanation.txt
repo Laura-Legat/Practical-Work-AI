@@ -1,0 +1,11 @@
+new_release_stream.csv - The raw deezer listening histories
+processed.csv - Pre-processed listening histories
+data_sampler.py -
+engine.py -
+environment.yml - What is needed to run ex2vec (Gustavo version???)
+ex2vec.py -
+metrics.py - Functionality for calculating Accuracy, Recall, F1
+preprocess.py - Converts new_release_stream.csv into processed.csv
+requirements.txt - What is needed to run ex2vec
+train.py - Functionality for training the model according to specified epochs and configuration
+utils.py - Provides utility functions for saving/loading checkpoints, managing CUDA usage, and initializing optimizers for neural network training
