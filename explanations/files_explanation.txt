@@ -3,7 +3,7 @@ processed.csv - Pre-processed listening histories
 data_sampler.py -
 engine.py -
 environment.yml - What is needed to run ex2vec (Gustavo version???)
-ex2vec.py -
+ex2vec.py - Ex2Vec model
 metrics.py - Functionality for calculating Accuracy, Recall, F1
 preprocess.py - Converts new_release_stream.csv into processed.csv
 requirements.txt - What is needed to run ex2vec
