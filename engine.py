@@ -31,15 +31,19 @@ class Engine(object):
 
         loss.backward() # grad backprop
 
-        # clip gradient
+        # clip gradient to avoid exploding grads, scales down too large grads, which leads to unstable training or divergence
         clip_grad = 3.0
         for _, p in self.model.named_parameters():
             if p.grad is not None: # if there are gradients computed for that model parameter, clip them
                 p.grad.data = torch.nan_to_num(p.grad.data) # replace all nan's with 0
-                param_norm = p.grad.data.norm(2) # calculate L2 norm of the param's grads (WHY)
-                clip_coef = clip_grad / (param_norm + 1e-6) # WHY
+                param_norm = p.grad.data.norm(2) # calculate L2 norm of the param's grads -> L2 regularization
+                # 1e-6 helps against divisions by 0
+                # if norm of param exceeds threshold of 3, then division leads to clip_coef < 1
+                clip_coef = clip_grad / (param_norm + 1e-6)
+                # gradients with L2 norm exceeding threshold will be scaled down
                 if clip_coef < 1: 
-                    p.grad.data.mul_(clip_coef) # scales gradients if necessary to enforce the threshold - WHY
+                    p.grad.data.mul_(clip_coef) # grads are scaled down by multiplying them with a number smaller than 1
+
 
         self.opt.step() # update params
         loss = loss.item() # converts loss value to python scalar and return it

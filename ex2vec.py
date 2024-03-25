@@ -77,7 +77,11 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
         base_activation = torch.mul(base_level, lamb)
 
-        activation = torch.minimum(base_activation, base_distance) # why minimum???
+        # select the smaller part, if d(u,v) is smaller, then we have
+        # d(u,v) - d(u,v) = 0, and it activation is smaller, we have a number
+        # > 0, which is similar to say: we pick either 0 or the larger than
+        # 0 number
+        activation = torch.minimum(base_activation, base_distance) 
         # move the user embedding in the direction of the item given a factor lambda
         # d(u,v) - activation
         distance = base_distance - activation  # self.lamb*distance*base_level
