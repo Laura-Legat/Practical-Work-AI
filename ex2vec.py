@@ -102,7 +102,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
                 ex2vec_pre,
                 model_dir=config["pretrain_dir"],
                 device_id=config["device_id"],
-            )
+            ) # load pre-trained state dict into model 
 
         # embeddings
         # copy weights of embedding layers from pre-trained Ex2Vec to current Ex2Vec model
@@ -110,7 +110,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         self.embedding_item.weight.data = ex2vec_pre.embedding_item.weight.data
 
     def init_weight(self):
-        pass
+        pass # ???
 
 
 class Ex2VecEngine(Engine):
@@ -124,7 +124,7 @@ class Ex2VecEngine(Engine):
         super(Ex2VecEngine, self).__init__(config) # initialize model
         print(self.model)
         for name, param in self.model.named_parameters():
-            print(name, type(param.data), param.size())
+            print(name, type(param.data), param.size()) # print model params
 
         if config["pretrain"]:
-            self.model.load_pretrain_weights()
+            self.model.load_pretrain_weights() # switch to pre-train mode

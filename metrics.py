@@ -10,7 +10,7 @@ class EvalMetrics(object):
     def subjects(self):
         return self._subjects
 
-    @subjects.setter
+    @subjects.setter # setup test set
     def subjects(self, subjects):
         """
         args:

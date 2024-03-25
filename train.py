@@ -6,7 +6,7 @@ from ex2vec import Ex2VecEngine
 
 n_user, n_item = data_sampler.get_n_users_items() # get number of unique users and number of unique items
 
-# hyperparams - batch size, learning rate, latent model dim
+# hyperparams - batch size, learning rate, latent/embedding dim
 BS = 512  # , 1024, 2048]
 LR = 5e-5  # [5e-5, 1e-4, 5e-3, 0.0002, 0.00075, 0.001]
 L_DIM = 64
