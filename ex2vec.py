@@ -35,6 +35,16 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         self.cutoff = torch.nn.Parameter(torch.tensor(3.0))
 
         # user and item embedding vectors (u and v in paper)
+        # initialize embedding layer structures
+        # nn.Embedding = PyTorch modules designed to map integer indices
+        # (user and item id's in our case) to dence vectors in a high-dimensional space 
+        # n_users = number of unique users
+        # n_items = number of unique items
+        # latent_d = 64 according to config = dimensionality of latent space
+        # this tells the function that it should expect n_users-indices and allocate memory for eaxch embedding
+        # THESE LINES a) SET UP THE MODEL ARCHITECTURE AND b) ALREADY CALCULATE THE EMBEDDING MATRIX, AKA AN EMBEDDING VECTOR FOR EACH USERID
+        # embedding matrix is store within torch.nn.Embedding layer als learnable parameter
+        # it does not need to know the actual IDs, this is abstracted away into giving each item a unique index which is mapped to a weight matrix/embedding matrix
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.n_users, embedding_dim=self.latent_d
         )
@@ -46,6 +56,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
     def forward(self, user_indices, item_indices, r_interval):
         # calculate u and v for first formula
+        # retrieve embedding vectors for each idx in user_indices -> fetch corresponding rows from embedding matrix, e.g. for user_idx=3, it fetches the 3rd user embedding
         user_embeddings = self.embedding_user(user_indices)  # + 10
         item_embeddings = self.embedding_item(item_indices)  # + 10
 
