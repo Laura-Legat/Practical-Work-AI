@@ -45,6 +45,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         # THESE LINES a) SET UP THE MODEL ARCHITECTURE AND b) ALREADY CALCULATE THE EMBEDDING MATRIX, AKA AN EMBEDDING VECTOR FOR EACH USERID
         # embedding matrix is store within torch.nn.Embedding layer als learnable parameter
         # it does not need to know the actual IDs, this is abstracted away into giving each item a unique index which is mapped to a weight matrix/embedding matrix
+        # AKA EMBEDDING LAYER IS SOME INCREMENTAL IDS WITH 64-DIM EMBEDDING MATRIX
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.n_users, embedding_dim=self.latent_d
         )

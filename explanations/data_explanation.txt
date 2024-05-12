@@ -21,3 +21,12 @@ timestamp: 188807
 y: 1 (indicating that the item was consumed)
 relational_interval: [0.0] (the time interval between this interaction and the previous one, in hours)
 set: train (indicating that this interaction belongs to the training set)
+
+
+28,60,188807,1,[0.0],train
+28,60,188977,1,"[0.04722222222222222, 0.0]",train
+28,60,189155,0,"[0.09666666666666666, 0.049444444444444444]",train
+
+User 28 consumed item 60 for the first time 188977-188807 = 170s / 60 / 60 = 0.047222hrs ago
+User 28 consumed item 60 since the last time 189155-188977 = 178s / 60 / 60 = 0.049444hrs ago and for THE FIRST TIME
+Sum 0.049444444444444444 + 0.04722222222222222 = 0.09666666666666666 hrs ago

@@ -63,7 +63,7 @@ class Engine(object):
 
     def evaluate(self, eval_data, epoch_id):
         self.model.eval()
-        with torch.no_grad(): # disable gradient computation
+        with torch.no_grad(): 
             # move all test data to GPU
             test_users, test_items, test_rel_int, test_y = (
                 eval_data[0],
