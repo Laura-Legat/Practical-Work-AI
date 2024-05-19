@@ -35,7 +35,7 @@ class EvalMetrics(object):
         """compute accuracy"""
         test_set = self._subjects
         test_set["pred"] = 0
-        test_set.loc[test_set["score"] >= 0.5, "pred"] = 1
+        test_set.loc[test_set["score"] >= 0.5, "pred"] = 1 # where the test_set['score'] vsriable is >=0.5, set the pred column to 1 -> to compare with actual binary y values of 0 and 1
 
         pred = test_set["pred"].values
         true = test_set["y"].values
