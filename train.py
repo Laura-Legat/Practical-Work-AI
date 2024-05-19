@@ -1,5 +1,3 @@
-# TRAIN THE MODEL
-
 # imports modules for preparing data and for training/evaluating the ex2vec model
 import data_sampler
 from ex2vec import Ex2VecEngine

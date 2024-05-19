@@ -16,7 +16,7 @@ class Engine(object):
         self.opt = use_optimizer(self.model, config) # set up optimizer 
         self.crit = torch.nn.BCELoss() # defining loss function as Binary cross entropy, used for binary classification tasks
 
-    # for a single batch that is passed to the function, move tensors to GPU, perform one training step, clip grads (WHY), and return loss
+    # for a single batch that is passed to the function, move tensors to GPU, perform one training step, clip grads, and return loss
     def train_single_batch(self, users, items, rel_int, interest):
         if self.config["use_cuda"] is True: # move all tensors onto GPU
             users, items, rel_int, interest = (
@@ -27,7 +27,7 @@ class Engine(object):
             )
         self.opt.zero_grad() # clear grads of tensors 
         rating_pred = self.model(users, items, rel_int) # forward pass to get interest
-        loss = self.crit(rating_pred.view(-1), interest) # compare predicted with actual interest values -> WHY .view(-1)
+        loss = self.crit(rating_pred.view(-1), interest) # compare predicted with actual interest values
 
         loss.backward() # grad backprop
 

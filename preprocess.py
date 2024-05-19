@@ -1,11 +1,11 @@
-# MAKES PROCESSED.CSV OUT OF NEW_RELEASE_STREAM.CSV
+# CREATES PROCESSED.CSV OUT OF NEW_RELEASE_STREAM.CSV
 
 import random
 import numpy as np
 import pandas as pd
 
 
-# function that computes delta_t, i.e., the time interval between consumptions (not considered when y = 0  )
+# function that computes delta_t, i.e., the time interval between consumptions (not considered when y = 0 )
 def get_delta_t(row):
     ts = row["timestamp"]
     activations = row["activations"]
