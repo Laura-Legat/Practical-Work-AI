@@ -35,7 +35,7 @@ df["relational_interval"] = df.apply(get_delta_t, axis=1)
 df["relational_interval"] = df["relational_interval"] / (60.0 * 60)  # time_scalar -> scales seconds to hours
 df["relational_interval"] = df["relational_interval"].map(list) # maps each element to its own list containing this element, similar to line 26
 
-
+"""
 # sample 2 user-items pairs for test set
 temp = df[["userId", "itemId"]].drop_duplicates() # select unique user-item combinations and store them in temp df
 temp = temp.groupby("userId").sample(n=2).reset_index(drop=True) # for each unique user, sample 2 user-item pairs
@@ -53,9 +53,46 @@ temp["set_val"] = "val" # creates specific validation set from training set
 df = df.merge(temp, on=["userId", "itemId"], how="left") # merges val set back
 df.loc[df["set_val"]=="val","set"]="val"
 #print(df.columns)
+"""
+
+"""
+New data-splitting technique:
+    1) Group by user histories: group by userId and sort each user history by timestamp
+    2) Split each user history into: 70% for training ("train"), 10 % for validation ("val") and 20% test ("test")
+    3) Sort the whole thing according to timestamp again
+"""
+
+# get user histories and group each of them by timestamp
+df_user_histories = df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
+
+# create structures for storing the rows belonging to the splits
+train_rows = []
+val_rows = []
+test_rows = []
+
+# split each user history 70-10-20 into train-val-test
+for _, user_history in df_user_histories.groupby('userId'):
+    # calculate row numbers for 70-10-20 split
+    history_n_rows = len(user_history)
+    train_size = int(history_n_rows * 0.7)
+    val_size = int(history_n_rows * 0.1)
+
+    train_rows.append(user_history[:train_size])
+    val_rows.append(user_history[train_size:train_size + val_size])
+    test_rows.append(user_history[train_size + val_size:])
+
+
+# concatinate everything to new df
+final_df = (
+    pd.concat([
+        pd.concat(train_rows).assign(set="train"),
+        pd.concat(val_rows).assign(set="val"),
+        pd.concat(test_rows).assign(set="test")
+    ]).sort_values(by=['userId', 'timestamp'])
+)
 
 # save everything to new, processed.csv
 save_path = "data/processed.csv"
-df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
+final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
     save_path, index=False
 )
