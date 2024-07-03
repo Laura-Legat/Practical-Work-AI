@@ -102,11 +102,21 @@ def instance_a_train_loader(batch_size):
 
 
 # create the evaluation dataset (user x item consumption sequences)
-# oreoare evaluation dataset by extracting relevant information from df_val and formatting it into tensors for evaluation by the model
-def evaluate_data():
+# preoare evaluation dataset by extracting relevant information from df_val and formatting it into tensors for evaluation by the model
+def evaluate_data(val_or_test=0):
+    """
+    Args:
+        val_or_test: Boolean variable whether the validation set (val_or_test=0), or the test set (val_or_test=1) should be used for evaluation
+    """
     test_users, test_items, test_rel_int, test_listen = [], [], [], []
 
-    for row in df_val.itertuples():
+    # change whether validation or test set is used for evaluation of the model
+    if val_or_test == 0:
+        df_eval = df_val
+    else:
+        df_eval = df_test
+
+    for row in df_eval.itertuples():
         ri = row.relational_interval
         ri = np.pad(ri, (0, 50 - len(ri)), constant_values=-1)
 
