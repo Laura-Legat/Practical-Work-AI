@@ -35,7 +35,11 @@ config = {
 engine = Ex2VecEngine(config)
 
 train_loader = data_sampler.instance_a_train_loader(BS)
-eval_data = data_sampler.evaluate_data()
+
+# change setting to using testing vs validation set for evaluation
+use_test = 0
+
+eval_data = data_sampler.evaluate_data(use_test)
 
 # indicate start of training + current configuration
 print("started training model: ", config["alias"])

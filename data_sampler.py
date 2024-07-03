@@ -112,8 +112,10 @@ def evaluate_data(val_or_test=0):
 
     # change whether validation or test set is used for evaluation of the model
     if val_or_test == 0:
+        print("Using validation set for evaluation\n")
         df_eval = df_val
     else:
+        print("Using test set for evaluation\n")
         df_eval = df_test
 
     for row in df_eval.itertuples():
