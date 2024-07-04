@@ -27,8 +27,8 @@ config = {
     "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
-    "pretrain_dir": "checkpoints/{}".format("pretrain_Ex2vec.model"),
-    "model_dir": "checkpoints/{}_Epoch{}_f1{:.4f}.model",
+    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Ex2Vec/checkpoints/{}".format("pretrain_Ex2vec.pt"),
+    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Ex2Vec/checkpoints/{}_Epoch{}_f1{:.4f}.pt",
 }
 
 # initialize ex2vec engine with above configuration

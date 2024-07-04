@@ -11,7 +11,7 @@ class Engine(object):
     def __init__(self, config):
         self.config = config # storing current training config
         self._evaluate = EvalMetrics()
-        self._writer = SummaryWriter(log_dir="runs/{}".format(config["alias"])) 
+        self._writer = SummaryWriter(log_dir="/content/drive/MyDrive/JKU/practical_work/Ex2Vec/runs/{}".format(config["alias"])) 
         self._writer.add_text("config", str(config), 0)
         self.opt = use_optimizer(self.model, config) # set up optimizer 
         self.crit = torch.nn.BCELoss() # defining loss function as Binary cross entropy, used for binary classification tasks
@@ -93,24 +93,34 @@ class Engine(object):
             ]
 
             # calculate accuracy, recall, f1 for all tensors
-            accuracy, recall, f1 = (
+            accuracy, recall, f1, bacc = (
                 self._evaluate.cal_acc(),
                 self._evaluate.cal_recall(),
                 self._evaluate.cal_f1(),
+                self._evaluate.cal_balanced_acc(),
             )
             # log metrics in the tensorboard writer
             self._writer.add_scalar("performance/ACC", accuracy, epoch_id)
             self._writer.add_scalar("performance/RECALL", recall, epoch_id)
             self._writer.add_scalar("performance/F1", f1, epoch_id)
+            self._writer.add_scalar("performance/B_ACC", bacc, epoch_id)
 
             print(
-                "[Evaluating Epoch {}] ACC = {:.4f}, RECALL = {:.4f}, F1 = {:.4f}".format(
-                    epoch_id, accuracy, recall, f1
+                "[Evaluating Epoch {}] ACC = {:.4f}, B_ACC = {:.4f}, RECALL = {:.4f}, F1 = {:.4f}".format(
+                    epoch_id, accuracy, bacc, recall, f1
                 )
             )
-            return accuracy, recall, f1
+            return accuracy, recall, f1, bacc, test_scores
 
     def save(self, alias, epoch_id: int, f1):
+        """
         if epoch_id in [20, 50, 99]: # save model at 20th, 50th and 100th epoch
             model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
             save_checkpoint(self.model, model_dir)
+        """
+        if epoch_id in [9, 19]:
+          print('Saving model at epoch ', epoch_id)
+          model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
+          print('Saving to ', model_dir)
+          save_checkpoint(self.model, model_dir)
+

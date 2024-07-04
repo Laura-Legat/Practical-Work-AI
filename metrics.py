@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, recall_score, balanced_accuracy_score
 
 
 class EvalMetrics(object):
@@ -60,3 +60,13 @@ class EvalMetrics(object):
         pred = test_set["pred"].values
         true = test_set["y"].values
         return f1_score(true, pred, average="weighted")
+
+    def cal_balanced_acc(self):
+        """Compute balanced accuracy"""
+        test_set = self._subjects
+        test_set["pred"] = 0
+        test_set.loc[test_set["score"] >= 0.5, "pred"] = 1
+
+        pred = test_set["pred"].values
+        true = test_set["y"].values
+        return balanced_accuracy_score(true, pred)

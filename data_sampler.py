@@ -46,6 +46,8 @@ df_val = df[df["set"] == "val"].copy()
 df_train = df[(df["set"] == "train")].copy()
 
 print("The size of the training set is: {}".format(len(df_train)))
+print("The size of the validation set is: {}".format(len(df_val)))
+print("The size of the test set is: {}".format(len(df_test)))
 
 # get the negative items for every user
 # df_negative = (
