@@ -62,8 +62,20 @@ New data-splitting technique:
     3) Sort the whole thing according to timestamp again
 """
 
+# 5-core filtering, filter out users and items with interactions under a certain threshold
+FILTERING_THRESHOLD = 5
+
+user_interactions_cnt = df.groupby('userId').size()
+valid_user_ids = user_interactions_cnt[user_interactions_cnt >= FILTERING_THRESHOLD].index
+filtered_df = df[df['userId'].isin(valid_user_ids)]
+
+item_interaction_cnt = filtered_df.groupby('itemId').size()
+valid_idem_ids = item_interaction_cnt[item_interaction_cnt >= FILTERING_THRESHOLD].index
+filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
+
+# SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
-df_user_histories = df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
+df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
 
 # create structures for storing the rows belonging to the splits
 train_rows = []
@@ -81,18 +93,62 @@ for _, user_history in df_user_histories.groupby('userId'):
     val_rows.append(user_history[train_size:train_size + val_size])
     test_rows.append(user_history[train_size + val_size:])
 
+train_df = pd.concat(train_rows).assign(set='train')
+val_df = pd.concat(val_rows).assign(set='val')
+test_df = pd.concat(test_rows).assign(set='test')
+
 
 # concatinate everything to new df
 final_df = (
-    pd.concat([
-        pd.concat(train_rows).assign(set="train"),
-        pd.concat(val_rows).assign(set="val"),
-        pd.concat(test_rows).assign(set="test")
-    ]).sort_values(by=['userId', 'timestamp'])
+    pd.concat([train_df, val_df, test_df]).sort_values(by=['userId', 'timestamp'])
 )
 
-# save everything to new, processed.csv
-save_path = "data/processed.csv"
+# save full split-up dataset as processed.csv
+save_path = "data/"
 final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
-    save_path, index=False
+    save_path + 'processed.csv', index=False
+)
+
+# PREPARE DATA FOR GRU4REC
+#seq length 50 split training
+SEQ_LEN = 50
+
+def split_into_seqs(whole_df, seq_length):
+
+    seq_list = []
+    # group whole training set per user
+    for user_id, user_df in whole_df.groupby('userId'):
+        user_df.sort_values(by="timestamp") # order user history 
+        n_seqs = len(user_df) // seq_length # how many (whole number) sequences will fit into the user training history
+
+        for i in range(n_seqs):
+            # calculate start and end indices
+            start = i * seq_length
+            end = start + seq_length
+
+            seq_df = user_df.iloc[start:end] # slice out corresponding rows
+            seq_df['SessionId'] = f'{user_id}_{i}' # give global sequence ID
+            seq_list.append(seq_df)
+
+    # if last slice of set is < 50, include it as partial seq (as GRU4Rec can handle sequences of different length)
+    start_remainding = n_seqs * SEQ_LEN
+    if start_remainding < len(user_df):
+        rem_seq_df = user_df.iloc[start_remainding:] # add partial seq rows
+        rem_seq_df['SessionId'] = f'{user_id}_{n_seqs}' # remainder gets last n_seq number as indexing starts with 0 for the other rows
+        seq_list.append(rem_seq_df)
+
+    return pd.concat(seq_list) # create pandas df out of sequences and return
+
+# create train,val, and test df's split into sequenecs
+train_df_seq = split_into_seqs(train_df, SEQ_LEN)
+val_df_seq = split_into_seqs(val_df, SEQ_LEN)
+test_df_seq = split_into_seqs(test_df, SEQ_LEN)
+
+# concatinate everything to new df
+final_df_seq = (
+    pd.concat([train_df_seq, val_df_seq, test_df_seq]).sort_values(by=['userId', 'timestamp'])
+)
+
+final_df_seq[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
+    save_path + 'processed.csv', index=False
 )
