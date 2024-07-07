@@ -4,6 +4,8 @@ import random
 import numpy as np
 import pandas as pd
 
+print('Pre-processing dataset for Ex2Vec...')
+
 
 # function that computes delta_t, i.e., the time interval between consumptions (not considered when y = 0 )
 def get_delta_t(row):
@@ -109,16 +111,20 @@ final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].t
     save_path + 'processed.csv', index=False
 )
 
+print('Saved processed.csv')
+print('Pre-processing dataset for GRU4Rec')
+
 # PREPARE DATA FOR GRU4REC
 #seq length 50 split training
 SEQ_LEN = 50
 
 def split_into_seqs(whole_df, seq_length):
-
     seq_list = []
+    whole_df['SessionId'] = '' # initialize sessionid col
+
     # group whole training set per user
     for user_id, user_df in whole_df.groupby('userId'):
-        user_df.sort_values(by="timestamp") # order user history 
+        user_df = user_df.sort_values(by="timestamp") # order user history 
         n_seqs = len(user_df) // seq_length # how many (whole number) sequences will fit into the user training history
 
         for i in range(n_seqs):
@@ -127,15 +133,15 @@ def split_into_seqs(whole_df, seq_length):
             end = start + seq_length
 
             seq_df = user_df.iloc[start:end] # slice out corresponding rows
-            seq_df['SessionId'] = f'{user_id}_{i}' # give global sequence ID
+            seq_df.loc[:, 'SessionId'] = f'{user_id}_{i}' # give global sequence ID
             seq_list.append(seq_df)
 
-    # if last slice of set is < 50, include it as partial seq (as GRU4Rec can handle sequences of different length)
-    start_remainding = n_seqs * SEQ_LEN
-    if start_remainding < len(user_df):
-        rem_seq_df = user_df.iloc[start_remainding:] # add partial seq rows
-        rem_seq_df['SessionId'] = f'{user_id}_{n_seqs}' # remainder gets last n_seq number as indexing starts with 0 for the other rows
-        seq_list.append(rem_seq_df)
+        # if last slice of set is < 50, include it as partial seq (as GRU4Rec can handle sequences of different length)
+        start_remainding = n_seqs * SEQ_LEN
+        if start_remainding < len(user_df):
+            rem_seq_df = user_df.iloc[start_remainding:] # add partial seq rows
+            rem_seq_df.loc[:, 'SessionId'] = f'{user_id}_{n_seqs}' # remainder gets last n_seq number as indexing starts with 0 for the other rows
+            seq_list.append(rem_seq_df)
 
     return pd.concat(seq_list) # create pandas df out of sequences and return
 
@@ -149,6 +155,8 @@ final_df_seq = (
     pd.concat([train_df_seq, val_df_seq, test_df_seq]).sort_values(by=['userId', 'timestamp'])
 )
 
-final_df_seq[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
-    save_path + 'processed.csv', index=False
-)
+# filter out irrelevant columns
+final_seq = final_df_seq[['itemId', 'timestamp', 'set', 'SessionId']]
+
+final_seq.to_csv(save_path + 'sequenced.csv', index=False)
+print('Saved sequenced.csv')
