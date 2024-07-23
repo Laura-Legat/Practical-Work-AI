@@ -143,14 +143,19 @@ def split_into_seqs(whole_df, seq_length):
             rem_seq_df.loc[:, 'SessionId'] = f'{user_id}_{n_seqs}' # remainder gets last n_seq number as indexing starts with 0 for the other rows
             seq_list.append(rem_seq_df)
 
-    return pd.concat(seq_list) # create pandas df out of sequences and return
+    return pd.concat(seq_list).sort_values(by=['userId', 'timestamp']) # create pandas df out of sequences and return
 
 # create train,val, and test df's split into sequenecs
 train_df_seq = split_into_seqs(train_df, SEQ_LEN)
 val_df_seq = split_into_seqs(val_df, SEQ_LEN)
 test_df_seq = split_into_seqs(test_df, SEQ_LEN)
 
-# concatinate everything to new df
+# filtering out irrelevant columns and saving as separate csv files for GRU4Rec
+train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_train.csv', index=False)
+val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_val.csv', index=False)
+test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_test.csv', index=False)
+
+""" # concatinate everything to new df
 final_df_seq = (
     pd.concat([train_df_seq, val_df_seq, test_df_seq]).sort_values(by=['userId', 'timestamp'])
 )
@@ -159,4 +164,4 @@ final_df_seq = (
 final_seq = final_df_seq[['itemId', 'timestamp', 'set', 'SessionId']]
 
 final_seq.to_csv(save_path + 'sequenced.csv', index=False)
-print('Saved sequenced.csv')
+print('Saved sequenced.csv') """
