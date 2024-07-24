@@ -18,10 +18,12 @@ def get_delta_t(row):
 
 
 # defines path for raw deezer dataset
-data_path = "data/new_release_stream.csv"
+DATA_PATH = 'data/'
+
+orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
 # read deezer dataset into pandas dataframe and sort dataframe by timestamp column (from smallest to largest timestamp)
-df = pd.read_csv(data_path)
+df = pd.read_csv(orig_dataset)
 df = df.sort_values(by="timestamp", ascending=True)
 
 
@@ -106,9 +108,8 @@ final_df = (
 )
 
 # save full split-up dataset as processed.csv
-save_path = "data/"
 final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
-    save_path + 'processed.csv', index=False
+    DATA_PATH + 'processed.csv', index=False
 )
 
 print('Saved processed.csv')
@@ -151,9 +152,9 @@ val_df_seq = split_into_seqs(val_df, SEQ_LEN)
 test_df_seq = split_into_seqs(test_df, SEQ_LEN)
 
 # filtering out irrelevant columns and saving as separate csv files for GRU4Rec
-train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_train.csv', index=False)
-val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_val.csv', index=False)
-test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(save_path + 'seq_test.csv', index=False)
+train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
+val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
+test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
 
 """ # concatinate everything to new df
 final_df_seq = (
