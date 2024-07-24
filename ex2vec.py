@@ -54,11 +54,18 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
         self.logistic = torch.nn.Sigmoid()
 
-    def forward(self, user_indices, item_indices, r_interval):
+    def forward(self, user_indices, item_indices, r_interval, embds_path=None):
         # calculate u and v for first formula
         # retrieve embedding vectors for each idx in user_indices -> fetch corresponding rows from embedding matrix, e.g. for user_idx=3, it fetches the 3rd user embedding
-        user_embeddings = self.embedding_user(user_indices)  # + 10
-        item_embeddings = self.embedding_item(item_indices)  # + 10
+        user_embeddings = self.embedding_user(user_indices)
+
+        if embds_path is not None: # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
+            print('Using external item embeddings...')
+            all_item_embds = self.load_GRU4Rec_weights(embds_path)
+            item_embeddings = all_item_embds[item_indices]
+
+        else:
+            item_embeddings = self.embedding_item(item_indices)
 
         # calculate b for second formula
         u_bias = self.user_bias(user_indices).squeeze(-1)
@@ -124,9 +131,11 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         self.embedding_user.weight.data = ex2vec_pre.embedding_user.weight.data
         self.embedding_item.weight.data = ex2vec_pre.embedding_item.weight.data
 
-    def init_weight(self):
-        pass # ???
-
+    def load_GRU4Rec_weights(self, GRU4RecModel_path):
+        # sets up pre-trained item embeddings as part of Ex2Vec pipeline
+        model_loaded = torch.load(GRU4RecModel_path)
+        item_embeds = model_loaded.model.Wy.weight.data
+        return item_embeds
 
 class Ex2VecEngine(Engine):
     """Engine for training & evaluating MEE model"""

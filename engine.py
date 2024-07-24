@@ -11,13 +11,13 @@ class Engine(object):
     def __init__(self, config):
         self.config = config # storing current training config
         self._evaluate = EvalMetrics()
-        self._writer = SummaryWriter(log_dir="/content/drive/MyDrive/JKU/practical_work/Ex2Vec/runs/{}".format(config["alias"])) 
+        self._writer = SummaryWriter(log_dir="/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/runs/{}".format(config["alias"])) 
         self._writer.add_text("config", str(config), 0)
         self.opt = use_optimizer(self.model, config) # set up optimizer 
         self.crit = torch.nn.BCELoss() # defining loss function as Binary cross entropy, used for binary classification tasks
 
     # for a single batch that is passed to the function, move tensors to GPU, perform one training step, clip grads, and return loss
-    def train_single_batch(self, users, items, rel_int, interest):
+    def train_single_batch(self, users, items, rel_int, interest, embds_path):
         if self.config["use_cuda"] is True: # move all tensors onto GPU
             users, items, rel_int, interest = (
                 users.cuda(),
@@ -26,7 +26,7 @@ class Engine(object):
                 interest.cuda(),
             )
         self.opt.zero_grad() # clear grads of tensors 
-        rating_pred = self.model(users, items, rel_int) # forward pass to get interest
+        rating_pred = self.model(users, items, rel_int, embds_path=embds_path) # forward pass to get interest
         loss = self.crit(rating_pred.view(-1), interest) # compare predicted with actual interest values
 
         loss.backward() # grad backprop
@@ -49,19 +49,19 @@ class Engine(object):
         loss = loss.item() # converts loss value to python scalar and return it
         return loss
 
-    def train_an_epoch(self, train_loader, epoch_id): # train all the batches for one epoch
+    def train_an_epoch(self, train_loader, epoch_id, embds_path): # train all the batches for one epoch
         self.model.train() # put model into training mode, enabling grad computation
         total_loss = 0
         for batch_id, batch in tqdm(enumerate(train_loader),total=len(train_loader)):
             assert isinstance(batch[0], torch.LongTensor) # WHY
             user, item, rel_int, interest = batch[0], batch[1], batch[2], batch[3]
             interest = interest.float()
-            loss = self.train_single_batch(user, item, rel_int, interest)
+            loss = self.train_single_batch(user, item, rel_int, interest, embds_path=embds_path)
            # print("[epoch {}] batch {}, loss: {}".format(epoch_id, batch_id, loss))
             total_loss += loss
         self._writer.add_scalar("model/loss", total_loss, epoch_id) # log total loss for one whole epoch
 
-    def evaluate(self, eval_data, epoch_id):
+    def evaluate(self, eval_data, epoch_id, embds_path):
         self.model.eval()
         with torch.no_grad(): 
             # move all test data to GPU
@@ -76,7 +76,7 @@ class Engine(object):
                 test_items = test_items.cuda()
                 test_rel_int = test_rel_int.cuda()
                 test_y = test_y.cuda()
-            test_scores = self.model(test_users, test_items, test_rel_int) #forward pass with test set to get interest scores
+            test_scores = self.model(test_users, test_items, test_rel_int, embds_path) #forward pass with test set to get interest scores
 
             if self.config["use_cuda"] is False: # move to cpu if cuda not available
                 test_users = test_users.cpu()
@@ -110,7 +110,7 @@ class Engine(object):
                     epoch_id, accuracy, bacc, recall, f1
                 )
             )
-            return accuracy, recall, f1, bacc, test_scores
+            return accuracy, recall, f1, bacc
 
     def save(self, alias, epoch_id: int, f1):
         """

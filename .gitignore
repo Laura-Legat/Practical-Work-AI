@@ -5,3 +5,5 @@ checkpoints/
 old/
 explanations/
 TODOS.txt
+__pycache__/
+.ipynb_checkpoints/

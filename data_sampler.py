@@ -32,9 +32,11 @@ class InteractionDataset(Dataset):
         return self.user_tensor.size(0)
 
 
-data_path = "data/processed.csv"
+DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
+orig_data = DATA_PATH + 'processed.csv'
+
 # read processed.csv into pandas dataframe while converting  relational_interval from string to python list
-df = pd.read_csv(data_path, converters={"relational_interval": literal_eval})
+df = pd.read_csv(orig_data, converters={"relational_interval": literal_eval})
 
 # determines unique users and items in dataset
 user_pool = set(df["userId"].unique())
