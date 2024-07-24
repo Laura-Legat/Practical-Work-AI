@@ -5,6 +5,9 @@ from ex2vec import Ex2VecEngine
 import os
 import shutil
 import torch
+import sys
+sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_PyTorch_Fork')
+import gru4rec_pytorch
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -41,7 +44,7 @@ config = {
     "device_id": 0,
     "pretrain": False,
     "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/checkpoints/{}".format("pretrain_Ex2vec.pt"),
-    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/checkpoints/{}_Epoch{}_f1{:.4f}.pt",
+    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/checkpoints/{}_EpochGRU4Rec{}_f1{:.4f}.pt",
 }
 
 # initialize ex2vec engine with above configuration
