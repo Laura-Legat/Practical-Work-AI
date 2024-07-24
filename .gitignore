@@ -1,5 +1,7 @@
 data/
+models/
 runs/
 checkpoints/
 old/
+explanations/
 TODOS.txt

@@ -18,7 +18,7 @@ def get_delta_t(row):
 
 
 # defines path for raw deezer dataset
-DATA_PATH = 'data/'
+DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
 
 orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
@@ -113,7 +113,7 @@ final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].t
 )
 
 print('Saved processed.csv')
-print('Pre-processing dataset for GRU4Rec')
+print('Pre-processing dataset for GRU4Rec...')
 
 # PREPARE DATA FOR GRU4REC
 #seq length 50 split training
@@ -155,6 +155,8 @@ test_df_seq = split_into_seqs(test_df, SEQ_LEN)
 train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
 val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
 test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
+
+print('Saved sequenced files for GRU4Rec')
 
 """ # concatinate everything to new df
 final_df_seq = (
