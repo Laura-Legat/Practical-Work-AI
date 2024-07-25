@@ -31,7 +31,7 @@ alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
 # config for training ex2vec model
 config = {
     "alias": alias,
-    "num_epoch": 20, #100
+    "num_epoch": 20,
     "batch_size": BS,
     "optimizer": "adam",
     "adam_lr": LR,
@@ -43,8 +43,8 @@ config = {
     "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
-    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/checkpoints/{}".format("pretrain_Ex2vec.pt"),
-    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/checkpoints/{}_EpochGRU4Rec{}_f1{:.4f}.pt",
+    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}".format("pretrain_Ex2vec.pt"),
+    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}_Epoch{}_f1{:.4f}.pt",
 }
 
 # initialize ex2vec engine with above configuration
@@ -66,3 +66,25 @@ for epoch in range(config["num_epoch"]): # loop over epochs in config
     engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path) # train 1 epoch
     acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path) # calculate metrics
     engine.save(config["alias"], epoch, f1) # save model chkpt
+
+
+def objective(trial):
+    BS = trial.suggest_categorical('BS', [512, 1024, 2048])
+    LR = trial.suggest_loguniform('LR', 5e-5, 1e-5, 1e-3, 0.00075)
+    L_DIM = trial.suggest_categorical('L_DIM', [32, 64, 128])
+    num_epoch = trial.suggest_int('num_epoch', 50, 100, 200)
+    l2_regularization = trial.suggest_loguniform('l2_regularization', 1e-5, 1e-2)
+
+"""     # optimizer specific tuning
+    optimizer_type = trial.suggest_categorical('optimizer', ['adam', 'sgd', 'rmsprop'])
+    sgd_momentum = None
+    rmsprop_alpha = None
+    rmsprop_momentum = None
+
+    if optimizer_type == "sgd":
+        sgd_momentum = trial.suggest_uniform('sgd_momentum', 0.0, 0.9)
+    elif optimizer_type == "rmsprop":
+        rmsprop_alpha = trial.suggest_uniform('rmsprop_alpha', 0.0, 0.99)
+        rmsprop_momentum = trial.suggest_uniform('rmsprop_momentum', 0.0, 0.9) """
+
+    

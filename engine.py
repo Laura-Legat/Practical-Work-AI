@@ -113,12 +113,7 @@ class Engine(object):
             return accuracy, recall, f1, bacc
 
     def save(self, alias, epoch_id: int, f1):
-        """
-        if epoch_id in [20, 50, 99]: # save model at 20th, 50th and 100th epoch
-            model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
-            save_checkpoint(self.model, model_dir)
-        """
-        if epoch_id in [9, 19]:
+        if epoch_id in [9, 19]: # save model at 10th and 20th epoch; before #20,50,99
           print('Saving model at epoch ', epoch_id)
           model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
           print('Saving to ', model_dir)

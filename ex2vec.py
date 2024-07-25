@@ -132,8 +132,8 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
     def load_GRU4Rec_weights(self, GRU4RecModel_path):
         # sets up pre-trained item embeddings as part of Ex2Vec pipeline
-        model_loaded = torch.load(GRU4RecModel_path)
-        item_embeds = model_loaded.model.Wy.weight.data
+        model_loaded = torch.load(GRU4RecModel_path) # load GRU4Rec model from state dict
+        item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
         return item_embeds
 
 class Ex2VecEngine(Engine):

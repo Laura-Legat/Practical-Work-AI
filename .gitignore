@@ -2,8 +2,7 @@ data/
 models/
 runs/
 checkpoints/
-old/
-explanations/
 TODOS.txt
 __pycache__/
 .ipynb_checkpoints/
+explanations/
