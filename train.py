@@ -47,44 +47,72 @@ config = {
     "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}_Epoch{}_f1{:.4f}.pt",
 }
 
-# initialize ex2vec engine with above configuration
-engine = Ex2VecEngine(config)
+def train_and_eval(configuration, batch_size, args):
+    # initialize ex2vec engine with above configuration
+    engine = Ex2VecEngine(configuration)
 
-train_loader = data_sampler.instance_a_train_loader(BS)
+    # obtain data loader for training set
+    train_loader = data_sampler.instance_a_train_loader(batch_size)
 
-# change setting to using testing vs validation set for evaluation, 0 = val, 1 = test
-use_test = 0
+    # change setting to using testing vs validation set for model evaluation, 0 = val, 1 = test
+    use_test = 0
 
-eval_data = data_sampler.evaluate_data(use_test)
+    eval_data = data_sampler.evaluate_data(use_test)
 
-# indicate start of training + current configuration
-print("started training model: ", config["alias"])
+    # indicate start of training + current configuration
+    print("Started training of model: ", configuration["alias"])
 
 
-for epoch in range(config["num_epoch"]): # loop over epochs in config
-    print("Epoch {} starts !".format(epoch))
-    engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path) # train 1 epoch
-    acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path) # calculate metrics
-    engine.save(config["alias"], epoch, f1) # save model chkpt
+    for epoch in range(configuration["num_epoch"]): # loop over epochs in config
+        print("Epoch {} starts !".format(epoch))
+        engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path)
+        acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path)
+        engine.save(configuration["alias"], epoch, f1) # save model chkpt
 
+train_and_eval(config, BS, args)
 
 def objective(trial):
-    BS = trial.suggest_categorical('BS', [512, 1024, 2048])
-    LR = trial.suggest_loguniform('LR', 5e-5, 1e-5, 1e-3, 0.00075)
-    L_DIM = trial.suggest_categorical('L_DIM', [32, 64, 128])
-    num_epoch = trial.suggest_int('num_epoch', 50, 100, 200)
-    l2_regularization = trial.suggest_loguniform('l2_regularization', 1e-5, 1e-2)
+    # hyperparameters to tune
+    BS_optim = trial.suggest_categorical('BS', [512, 1024, 2048])
+    LR_optim = trial.suggest_loguniform('LR', 5e-5, 1e-5, 1e-3, 0.00075)
+    L_DIM_optim = trial.suggest_categorical('L_DIM', [32, 64, 128])
+    num_epoch_optim = trial.suggest_int('num_epoch', 50, 100, 200)
+    l2_regularization_optim = trial.suggest_loguniform('l2_regularization', 1e-5, 1e-2)
 
-"""     # optimizer specific tuning
-    optimizer_type = trial.suggest_categorical('optimizer', ['adam', 'sgd', 'rmsprop'])
+    """# optimizer specific tuning
+    optimizer_type_optim = trial.suggest_categorical('optimizer', ['adam', 'sgd', 'rmsprop'])
     sgd_momentum = None
     rmsprop_alpha = None
     rmsprop_momentum = None
 
-    if optimizer_type == "sgd":
+    if optimizer_type_optim == "sgd":
         sgd_momentum = trial.suggest_uniform('sgd_momentum', 0.0, 0.9)
-    elif optimizer_type == "rmsprop":
+    elif optimizer_type_optim == "rmsprop":
         rmsprop_alpha = trial.suggest_uniform('rmsprop_alpha', 0.0, 0.99)
         rmsprop_momentum = trial.suggest_uniform('rmsprop_momentum', 0.0, 0.9) """
+
+    # construct unique tuning configuration
+    alias_optim = "ex2vec_optim" + "BS" + str(BS_optim) + "LR" + str(LR_optim) + "L_DIM" + str(L_DIM_optim)
+
+    # config for training ex2vec model
+    config_optim = {
+    "alias": alias_optim,
+    "num_epoch": num_epoch_optim,
+    "batch_size": BS_optim,
+    "optimizer": "adam",
+    "adam_lr": LR_optim,
+    "n_users": n_user,
+    "n_items": n_item,
+    "latent_dim": L_DIM_optim,
+    "num_negative": 0,
+    "l2_regularization": l2_regularization_optim,
+    "use_cuda": True,
+    "device_id": 0,
+    "pretrain": False,
+    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/optim/{}".format("pretrain_Ex2vec.pt"),
+    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/optim/{}_Epoch{}_f1{:.4f}.pt",
+    }
+
+
 
     

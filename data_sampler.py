@@ -51,14 +51,6 @@ print("The size of the training set is: {}".format(len(df_train)))
 print("The size of the validation set is: {}".format(len(df_val)))
 print("The size of the test set is: {}".format(len(df_test)))
 
-# get the negative items for every user
-# df_negative = (
-#    df.groupby("userId")["itemId"].apply(set).reset_index(name="interacted_items")
-# )
-# df_negative["negative_items"] = df_negative["interacted_items"].apply(
-#    lambda x: item_pool - x
-# )
-
 
 # function that returns the train, val and test set
 def get_train_test_val():
@@ -68,11 +60,6 @@ def get_train_test_val():
 # function that returns the number of users and items
 def get_n_users_items():
     return df.userId.nunique(), df.itemId.nunique()
-
-
-# def get_negatives():
-#    return df_negative
-
 
 # build the training set in batches
 def instance_a_train_loader(batch_size):

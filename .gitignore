@@ -1,7 +1,7 @@
 data/
 models/
 runs/
-checkpoints/
+optim/
 TODOS.txt
 __pycache__/
 .ipynb_checkpoints/
