@@ -8,6 +8,7 @@ import torch
 import sys
 sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_PyTorch_Fork')
 import gru4rec_pytorch
+import json
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -16,6 +17,7 @@ class MyHelpFormatter(argparse.HelpFormatter):
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Train an Ex2Vec model.')
 parser.add_argument('-ep', '--embds_path', type=str, default=None, help='Path to the GRU4Rec trained model')
+parser.add_argument('-o', '--optim', type=str, default=None, help='Type Y for activating hyperparameter optimization after the training loop')
 args = parser.parse_args() # store command line args into args variable
 
 n_user, n_item = data_sampler.get_n_users_items() # get number of unique users and number of unique items
@@ -26,7 +28,7 @@ LR = 5e-5  # [5e-5, 1e-4, 5e-3, 0.0002, 0.00075, 0.001]
 L_DIM = 64
 
 # construct unique training configuration
-alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
+alias = "ex2vec_train" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
 
 # config for training ex2vec model
 config = {
@@ -43,11 +45,12 @@ config = {
     "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
-    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}".format("pretrain_Ex2vec.pt"),
+    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",
     "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}_Epoch{}_f1{:.4f}.pt",
+    "chckpt_dir":"/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/chckpts/{}_Epoch{}_f1{:.4f}.pt",
 }
 
-def train_and_eval(configuration, batch_size, args):
+def train_and_eval(configuration, batch_size, args, tuning = False):
     # initialize ex2vec engine with above configuration
     engine = Ex2VecEngine(configuration)
 
@@ -67,9 +70,9 @@ def train_and_eval(configuration, batch_size, args):
         print("Epoch {} starts !".format(epoch))
         engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path)
         acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path)
-        engine.save(configuration["alias"], epoch, f1) # save model chkpt
-
-train_and_eval(config, BS, args)
+        if tuning == False:
+            engine.save(configuration["alias"], epoch, f1) # save model chkpt
+        return f1
 
 def objective(trial):
     # hyperparameters to tune
@@ -108,11 +111,25 @@ def objective(trial):
     "l2_regularization": l2_regularization_optim,
     "use_cuda": True,
     "device_id": 0,
-    "pretrain": False,
-    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/optim/{}".format("pretrain_Ex2vec.pt"),
-    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/optim/{}_Epoch{}_f1{:.4f}.pt",
+    "pretrain": True,
+    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",
+    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}_Epoch{}_f1{:.4f}.pt",
+    "chckpt_dir":"/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/chckpts/{}_Epoch{}_f1{:.4f}.pt",
     }
 
+    train_and_eval(config_optim, BS_optim, args, tuning=True)
 
+# initial training of Ex2Vec
+train_and_eval(config, BS, args)
 
+if args.optim == 'Y':
+    print('Starting hyperparameter optimization with Optuna...')
     
+    # hyperparameter tuning
+    N_TRIALS = 50
+
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials = N_TRIALS)
+
+    with open('best_params_Ex2Vec.json', 'w') as f:
+        json.dump(study.best_params, f, indent=4)
