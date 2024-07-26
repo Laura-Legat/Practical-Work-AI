@@ -113,15 +113,15 @@ class Engine(object):
             return accuracy, recall, f1, bacc
 
     def save(self, alias, epoch_id: int, f1):
-        if epoch_id == self.config["num_epochs"]-1: # save result of last epoch as trained model
-          print('Saving final model')
-          model_dir = self.config["pretrain_dir"]
-          print('Saving to ', model_dir)
+        if epoch_id == self.config["num_epoch"]-1: # save result of last epoch as trained model
+          model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
+          print('Saving final model to ', model_dir)
           save_checkpoint(self.model, model_dir)
+          print('Model saved')
         else:
-            if (epoch_id + 1) % 10 == 0: # save model at every 10th epoch
+            if (epoch_id + 1) % 2 == 0: # save model at every 2nd epoch - change this to 10
                 print('Saving model at epoch ', (epoch_id+1))
                 chckpt_dir = self.config["chckpt_dir"].format(alias, epoch_id, f1)
-                print('Saving to ', chckpt_dir)
+                print('Saving model to ', chckpt_dir)
                 save_checkpoint(self.model, chckpt_dir)
 
