@@ -11,8 +11,9 @@ class MyHelpFormatter(argparse.HelpFormatter):
         self._width = shutil.get_terminal_size().columns
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Preprocessing for Ex2Vec and GRU4Rec models.')
-parser.add_argument('-sl', '--seq_len', type=str, default=50, help='Sequence length for data-splitting for GRU4Rec model.')
-parser.add_argument('-st', '--stride', type=str, default=1, help='Stride for overlap during data-splitting for GRU4Rec.')
+parser.add_argument('-sl', '--seq_len', type=str, default=50, help='Sequence length for data-splitting for GRU4Rec model. Default = 50.')
+parser.add_argument('-st', '--stride', type=str, default=1, help='Stride for overlap during data-splitting for GRU4Rec. Default = 1.')
+parser.add_argument('-sm', '--small_version', type=str, default="N", help='If a small version of the dataset should be used for ex2vec and GRU4Rec preprocessing. Type Y for yes, N for no. Default = N.')
 args = parser.parse_args() # store command line args into args variable
 
 
@@ -30,13 +31,23 @@ def get_delta_t(row):
 
 
 # defines path for raw deezer dataset
-DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
+DATA_PATH = 'G:/My Drive/JKU/practical_work/Practical-Work-AI/data/'
 
 orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
 # read deezer dataset into pandas dataframe and sort dataframe by timestamp column (from smallest to largest timestamp)
 df = pd.read_csv(orig_dataset, index_col=False)
 df = df.sort_values(by="timestamp", ascending=True)
+
+# generate a smaller version of the preprocessed dataset for testing purposes
+if args.small_version == 'Y':
+    # sample 500 random unique userIDs
+    random_user_ids = np.random.choice(df['userId'], size=500, replace=False)
+    # filter full dataset to only contain interactions from the 500 randomly selected users
+    df_sm = df[df['userId'].isin(random_user_ids)]
+    # resort new dataframe
+    df_sm = df_sm.sort_values(by='timestamp', ascending=True)
+    df = df_sm # replace old, full dataset
 
 # collect each user's listening history
 df["activations"] = df["timestamp"] # create new column "activations" and set to the timestamps
@@ -56,7 +67,6 @@ New data-splitting technique:
     2) Split each user history into: 70% for training ("train"), 10 % for validation ("val") and 20% test ("test")
     3) Sort the whole thing according to timestamp again
 """
-"""
 
 # 5-core filtering, filter out users and items with interactions under a certain threshold
 FILTERING_THRESHOLD = 5
@@ -68,11 +78,6 @@ filtered_df = df[df['userId'].isin(valid_user_ids)]
 item_interaction_cnt = filtered_df.groupby('itemId').size()
 valid_idem_ids = item_interaction_cnt[item_interaction_cnt >= FILTERING_THRESHOLD].index
 filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
-
-print(filtered_df)
-"""
-
-filtered_df = df # change this, only used for test purposes
 
 # SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
@@ -136,6 +141,7 @@ def generate_window(last_start_idx, df, user_id, seq_id, seq_length, stride) -> 
     for idx in range(0, last_start_idx, stride):
         seq_df = df.iloc[idx:idx+seq_length].copy() # slide out window of size SEQ_LEN
         seq_df.loc[:, 'SessionId'] = f'{user_id}_{seq_id}' # assign global (wrt to user) sequence ID
+        seq_df[seq_df.columns[seq_df.columns.get_loc('tempSessionId')]] = seq_id
         seqs.append(seq_df)
         seq_id += 1
     return seqs, seq_id
@@ -154,6 +160,7 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
         Tuple of pandas DataFrames where each DataFrame contains the sequences per set
     """
     whole_df['SessionId'] = '' # initialize sessionid col
+    whole_df['tempSessionId'] = None
     train_seqs, val_seqs, test_seqs = [], [], []
 
     # group whole training set per user
@@ -187,7 +194,7 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
         test_seqs_partial, seq_id = generate_window(last_start_idx, combined_test_df, user_id, seq_id, seq_length, stride)
         test_seqs.extend(test_seqs_partial)
 
-    return pd.concat(train_seqs).sort_values(by=['userId', 'SessionId', 'timestamp']), pd.concat(val_seqs).sort_values(by=['userId', 'SessionId', 'timestamp']), pd.concat(test_seqs).sort_values(by=['userId', 'SessionId', 'timestamp'])
+    return pd.concat(train_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(val_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(test_seqs).sort_values(by=['userId', 'tempSessionId'])
 
 # split dataset into sequences
 train_df_seq, val_df_seq, test_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
