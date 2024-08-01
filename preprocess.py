@@ -1,8 +1,20 @@
 # CREATES PROCESSED.CSV OUT OF NEW_RELEASE_STREAM.CSV
-
+import argparse # lib for parsing command-line args
 import random
+import shutil
 import numpy as np
 import pandas as pd
+
+class MyHelpFormatter(argparse.HelpFormatter):
+    def __init__(self, *args, **kwargs):
+        super(MyHelpFormatter, self).__init__(*args, **kwargs)
+        self._width = shutil.get_terminal_size().columns
+
+parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Preprocessing for Ex2Vec and GRU4Rec models.')
+parser.add_argument('-sl', '--seq_len', type=str, default=50, help='Sequence length for data-splitting for GRU4Rec model.')
+parser.add_argument('-st', '--stride', type=str, default=1, help='Stride for overlap during data-splitting for GRU4Rec.')
+args = parser.parse_args() # store command line args into args variable
+
 
 print('Pre-processing dataset for Ex2Vec...')
 
@@ -23,9 +35,8 @@ DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
 orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
 # read deezer dataset into pandas dataframe and sort dataframe by timestamp column (from smallest to largest timestamp)
-df = pd.read_csv(orig_dataset)
+df = pd.read_csv(orig_dataset, index_col=False)
 df = df.sort_values(by="timestamp", ascending=True)
-
 
 # collect each user's listening history
 df["activations"] = df["timestamp"] # create new column "activations" and set to the timestamps
@@ -40,30 +51,11 @@ df["relational_interval"] = df["relational_interval"] / (60.0 * 60)  # time_scal
 df["relational_interval"] = df["relational_interval"].map(list) # maps each element to its own list containing this element, similar to line 26
 
 """
-# sample 2 user-items pairs for test set
-temp = df[["userId", "itemId"]].drop_duplicates() # select unique user-item combinations and store them in temp df
-temp = temp.groupby("userId").sample(n=2).reset_index(drop=True) # for each unique user, sample 2 user-item pairs
-temp["set"] = "test" # make this slice of original df the testset-df
-
-df = df.merge(temp, on=["userId", "itemId"], how="left") # merge testset-df back into general df
-df["set"] = df["set"].fillna("train") # fill all other cells in set-col with train
-
-# sample 2 user-items pairs for evaluation
-temp = df[df.set == "train"].copy() # filters df only by training data
-temp = temp[["userId", "itemId"]].drop_duplicates()
-temp = temp.groupby("userId").sample(n=2).reset_index(drop=True)
-temp["set_val"] = "val" # creates specific validation set from training set
-#print(temp.columns)
-df = df.merge(temp, on=["userId", "itemId"], how="left") # merges val set back
-df.loc[df["set_val"]=="val","set"]="val"
-#print(df.columns)
-"""
-
-"""
 New data-splitting technique:
     1) Group by user histories: group by userId and sort each user history by timestamp
     2) Split each user history into: 70% for training ("train"), 10 % for validation ("val") and 20% test ("test")
     3) Sort the whole thing according to timestamp again
+"""
 """
 
 # 5-core filtering, filter out users and items with interactions under a certain threshold
@@ -77,6 +69,11 @@ item_interaction_cnt = filtered_df.groupby('itemId').size()
 valid_idem_ids = item_interaction_cnt[item_interaction_cnt >= FILTERING_THRESHOLD].index
 filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
 
+print(filtered_df)
+"""
+
+filtered_df = df # change this, only used for test purposes
+
 # SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
 df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
@@ -87,7 +84,7 @@ val_rows = []
 test_rows = []
 
 # split each user history 70-10-20 into train-val-test
-for _, user_history in df_user_histories.groupby('userId'):
+for _, user_history in filtered_df.groupby('userId'):
     # calculate row numbers for 70-10-20 split
     history_n_rows = len(user_history)
     train_size = int(history_n_rows * 0.7)
@@ -116,40 +113,84 @@ print('Saved processed.csv')
 print('Pre-processing dataset for GRU4Rec...')
 
 # PREPARE DATA FOR GRU4REC
-#seq length 50 split training
-SEQ_LEN = 50
+SEQ_LEN = int(args.seq_len)
+STRIDE = int(args.stride)
 
-def split_into_seqs(whole_df, seq_length):
-    seq_list = []
+def generate_window(last_start_idx, df, user_id, seq_id, seq_length, stride) -> tuple[list, int]:
+    """
+    Helper function for slicing a dataframe.
+
+    Args:
+        last_start_idx: The last possible starting index for a window of length SEQ_LEN within len(df)
+        df: The current dataframe to split up
+        user_id: The current user the df belongs to
+        seq_id: Increasing sequence ID
+        seq_length: The length of one window
+        stride: How many shifting positions each window has
+
+    Returns:
+        seqs: List containing all windows that df was split into
+        seq_id: The current seq_id as int
+    """
+    seqs = []
+    for idx in range(0, last_start_idx, stride):
+        seq_df = df.iloc[idx:idx+seq_length].copy() # slide out window of size SEQ_LEN
+        seq_df.loc[:, 'SessionId'] = f'{user_id}_{seq_id}' # assign global (wrt to user) sequence ID
+        seqs.append(seq_df)
+        seq_id += 1
+    return seqs, seq_id
+
+
+def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Function for splitting user histories into overlapping windows of length SEQ_LEN.
+
+    Args:
+        whole_df: A whole dataset as pandas DataFrame
+        seq_length: The length of one window
+        stride: How many shifting positions each window has
+
+    Returns:
+        Tuple of pandas DataFrames where each DataFrame contains the sequences per set
+    """
     whole_df['SessionId'] = '' # initialize sessionid col
+    train_seqs, val_seqs, test_seqs = [], [], []
 
     # group whole training set per user
     for user_id, user_df in whole_df.groupby('userId'):
-        user_df = user_df.sort_values(by="timestamp") # order user history 
-        n_seqs = len(user_df) // seq_length # how many (whole number) sequences will fit into the user training history
+        seq_id = 0 # create sequence ids across sets per user
+        user_df = user_df.sort_values(by="timestamp") # order user history by consumption timestamp
 
-        for i in range(n_seqs):
-            # calculate start and end indices
-            start = i * seq_length
-            end = start + seq_length
+        # separate user history based on set column
+        train_df = user_df[user_df['set'] == 'train']
+        val_df = user_df[user_df['set'] == 'val']
+        test_df = user_df[user_df['set'] == 'test']
 
-            seq_df = user_df.iloc[start:end] # slice out corresponding rows
-            seq_df.loc[:, 'SessionId'] = f'{user_id}_{i}' # give global sequence ID
-            seq_list.append(seq_df)
+        last_start_idx = (len(train_df) - seq_length) + 1 # +1 because of 0 indexing, calculates the last possible starting indices of a window in a df rows which lead to complete windows (no partial sequences)
 
-        # if last slice of set is < 50, include it as partial seq (as GRU4Rec can handle sequences of different length)
-        start_remainding = n_seqs * SEQ_LEN
-        if start_remainding < len(user_df):
-            rem_seq_df = user_df.iloc[start_remainding:] # add partial seq rows
-            rem_seq_df.loc[:, 'SessionId'] = f'{user_id}_{n_seqs}' # remainder gets last n_seq number as indexing starts with 0 for the other rows
-            seq_list.append(rem_seq_df)
+        train_seqs_partial, seq_id = generate_window(last_start_idx, train_df, user_id, seq_id, seq_length, stride)
+        train_seqs.extend(train_seqs_partial)
 
-    return pd.concat(seq_list).sort_values(by=['userId', 'timestamp']) # create pandas df out of sequences and return
+        # get last SEQ_LEN-1 items from training set and concat for validation set
+        combined_val_df = pd.concat([train_df.iloc[-seq_length+1:], val_df])
+        last_start_idx = (len(combined_val_df) - seq_length) + 1
 
-# create train,val, and test df's split into sequenecs
-train_df_seq = split_into_seqs(train_df, SEQ_LEN)
-val_df_seq = split_into_seqs(val_df, SEQ_LEN)
-test_df_seq = split_into_seqs(test_df, SEQ_LEN)
+        val_seqs_partial, seq_id = generate_window(last_start_idx, combined_val_df, user_id, seq_id, seq_length, stride)
+        val_seqs.extend(val_seqs_partial)
+
+        combined_test_df = pd.concat([val_df.iloc[-seq_length+1:], test_df])
+        if len(val_df.iloc[-seq_length+1:]) + 1 < seq_length: # check if there are too little validation set items and we need to thus add training items
+            diff = seq_length - (len(val_df.iloc[-seq_length+1:]) + 1)
+            combined_test_df = pd.concat([train_df.iloc[-diff:], combined_test_df])
+        last_start_idx = (len(combined_test_df) - seq_length) + 1
+
+        test_seqs_partial, seq_id = generate_window(last_start_idx, combined_test_df, user_id, seq_id, seq_length, stride)
+        test_seqs.extend(test_seqs_partial)
+
+    return pd.concat(train_seqs).sort_values(by=['userId', 'SessionId', 'timestamp']), pd.concat(val_seqs).sort_values(by=['userId', 'SessionId', 'timestamp']), pd.concat(test_seqs).sort_values(by=['userId', 'SessionId', 'timestamp'])
+
+# split dataset into sequences
+train_df_seq, val_df_seq, test_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
 
 # filtering out irrelevant columns and saving as separate csv files for GRU4Rec
 train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
@@ -157,14 +198,3 @@ val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_val.csv
 test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
 
 print('Saved sequenced files for GRU4Rec')
-
-""" # concatinate everything to new df
-final_df_seq = (
-    pd.concat([train_df_seq, val_df_seq, test_df_seq]).sort_values(by=['userId', 'timestamp'])
-)
-
-# filter out irrelevant columns
-final_seq = final_df_seq[['itemId', 'timestamp', 'set', 'SessionId']]
-
-final_seq.to_csv(save_path + 'sequenced.csv', index=False)
-print('Saved sequenced.csv') """
