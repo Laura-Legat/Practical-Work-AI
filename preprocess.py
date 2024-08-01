@@ -200,8 +200,8 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
 train_df_seq, val_df_seq, test_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
 
 # filtering out irrelevant columns and saving as separate csv files for GRU4Rec
-train_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
-val_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
-test_df_seq[['itemId', 'timestamp', 'SessionId']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
+train_df_seq[['itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
+val_df_seq[['itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
+test_df_seq[['itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
 
 print('Saved sequenced files for GRU4Rec')
