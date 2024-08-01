@@ -10,6 +10,7 @@ sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU
 import gru4rec_pytorch
 import json
 import optuna
+from collections import OrderedDict
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -19,7 +20,11 @@ class MyHelpFormatter(argparse.HelpFormatter):
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Train an Ex2Vec model.')
 parser.add_argument('-ep', '--embds_path', type=str, default=None, help='Path to the GRU4Rec trained model')
 parser.add_argument('-o', '--optim', type=str, default=None, help='Type Y for activating hyperparameter optimization after the training loop')
+parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize')
 args = parser.parse_args() # store command line args into args variable
+
+if args.param_str: # if parameter string is provided, parse it and create an ordered dict of params
+    ex2vec_params = OrderedDict([x.split('=') for x in args.parameter_str.split(',')]) # splits e.g. "loss=bpr" to {"loss":"bpr"}
 
 n_user, n_item = data_sampler.get_n_users_items() # get number of unique users and number of unique items
 
@@ -133,7 +138,7 @@ if args.optim == 'Y':
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials = N_TRIALS)
 
-    with open('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/best_params_Ex2Vec.json', 'w') as f:
+    with open('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/best_params_Ex2Vec.json', 'a') as f:
         json.dump(study.best_params, f, indent=4)
 
 else:

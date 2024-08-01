@@ -2,6 +2,8 @@ import argparse
 import shutil
 import optuna
 import json # since optimization files are in JSON format
+import pexpect
+import re
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -10,6 +12,27 @@ class MyHelpFormatter(argparse.HelpFormatter):
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Perform hyperparameter optimization on a model.')
 parser.add_argument('-opf', '--optuna_parameter_file', metavar='PATH', type=str, help='Path to JSON file describing the parameter space for optuna.')
+parser.add_argument('-nt', '--ntrials', metavar='NT', type=int, nargs='?', default=50, help='Number of optimization trials to perform (Default: 50)')
+parser.add_argument('-p', '--prog_path', type=str, help='Python training script path.')
+parser.add_argument('-o', '--output_path', type=str, help='Path of file where to save best parameters of study.')
+parser.add_argument('-mo', '--model', type=str, default='ex2vec', help='The model on which to optimize (type ex2vec or gru4rec).')
+
+#Ex2Vec specific args
+parser.add_argument('-ep', '--embds_path', type=str, default=None, help='Path to the pretrained GRU4Rec trained')
+
+#GRU4Rec specific args
+parser.add_argument('-t', '--test', metavar='TEST_PATH', type=str, nargs='+', help='Path to the test data set(s) located at TEST_PATH. Multiple test sets can be provided (separate with spaces). (Default: don\'t evaluate the model)')
+parser.add_argument('-g', '--gru4rec_model', metavar='GRFILE', type=str, default='gru4rec_pytorch', help='Name of the file containing the GRU4Rec class. Can be used to select different varaiants. (Default: gru4rec_pytorch)')
+parser.add_argument('-ps', '--parameter_string', metavar='PARAM_STRING', type=str, help='Training parameters provided as a single parameter string. The format of the string is `param_name1=param_value1,param_name2=param_value2...`, e.g.: `loss=bpr-max,layers=100,constrained_embedding=True`. Boolean training parameters should be either True or False; parameters that can take a list should use / as the separator (e.g. layers=200/200). Mutually exclusive with the -pf (--parameter_file) and the -l (--load_model) arguments and one of the three must be provided.')
+parser.add_argument('-m', '--measure', metavar='AT', type=int, nargs='+', default=[20], help='Measure recall & MRR at the defined recommendation list length(s). Multiple values can be provided. (Default: 20)')
+parser.add_argument('-pm', '--primary_metric', metavar='METRIC', choices=['recall', 'mrr'], default='recall', help='Set primary metric, recall or mrr (e.g. for paropt). (Default: recall)')
+parser.add_argument('-e', '--eval_type', metavar='EVAL_TYPE', choices=['standard', 'conservative', 'median'], default='standard', help='Sets how to handle if multiple items in the ranked list have the same prediction score (which is usually due to saturation or an error). See the documentation of batch_eval() in evaluation.py for further details. (Default: standard)')
+parser.add_argument('-d', '--device', metavar='D', type=str, default='cuda:0', help='Device used for computations (default: cuda:0).')
+parser.add_argument('-ik', '--item_key', metavar='IK', type=str, default='ItemId', help='Column name corresponding to the item IDs (detault: ItemId).')
+parser.add_argument('-sk', '--session_key', metavar='SK', type=str, default='SessionId', help='Column name corresponding to the session IDs (default: SessionId).')
+parser.add_argument('-tk', '--time_key', metavar='TK', type=str, default='Time', help='Column name corresponding to the timestamp (default: Time).')
+parser.add_argument('-l', '--load_model', action='store_true', help='Load an already trained model instead of training a model. Mutually exclusive with the -ps (--parameter_string) and the -pf (--parameter_file) arguments and one of the three must be provided.')
+
 args = parser.parse_args() # store command line args into args variable
 
 class Parameter:
@@ -42,6 +65,41 @@ class Parameter:
         if self.dtype == 'categorical':
             desc += ' \t options: [{}]'.format(','.join([str(x) for x in self.values]))
         return desc
+    
+def generate_command(optimized_param_str):
+    """
+    Generate a command as a string for executing a Python script run.py with several parameters.
+    """
+    command = ''
+    if args.model == 'gru4rec':
+        command = 'python "{}" "{}" -t "{}" -g {} -ps {},{} -m {} -pm {} -lpm -e {} -d {} -ik {} -sk {} -tk {} -l {}'.format(args.prog_path, args.path, args.test, args.gru4rec_model, args.fixed_parameters, optimized_param_str, args.measure, args.primary_metric, args.eval_type, args.device, args.item_key, args.session_key, args.time_key, args.load_model)
+    elif args.model == 'ex2vec':
+        command = 'python "{}" -ep "{}" -ps {}'.format(args.prog_path, args.embds_path, optimized_param_str)
+    return command
+
+def train_and_eval(optimized_param_str):
+    command = generate_command(optimized_param_str) # get execution command
+    cmd = pexpect.spawnu(command, timeout=None, maxread=1) # run command in a spawned subprocess
+    # TODO: Finish this function
+    
+def objective(trial, par_space):
+    """
+    The function defining the Optuna optimization process.
+
+    Args:
+        trial: Represents a single optimization run
+        par_space: List of parameters to be optimized
+    Returns:
+        metric: The result on the chosen metric for the current training run.
+    """
+    # create whole parameter string
+    optimized_param_str = []
+    for par in par_space: # for each parameter
+        val = par(trial) # sampled value from specified 'values' field
+        optimized_param_str.append('{}={}'.format(par.name,val)) # e.g. loss=bpr-max
+    optimized_param_str = ','.join(optimized_param_str) # e.g. loss=bpr-max,embedding=0,...
+    metric = train_and_eval(optimized_param_str)
+    return metric
 
 par_space = []
 with open(args.optuna_parameter_file, 'rt') as f: # open json file containing parameters to optimize in read text mode
@@ -52,3 +110,17 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
         print('\t' + str(par))
         par_space.append(par)
     print('-'*80)
+
+study = optuna.create_study(direction='maximize') # goal is to maximize val which is returned from the objective function
+study.optimize(lambda trial: objective(trial, par_space), n_trials=args.ntrials) # run objective function for a numer of ntrials iterations
+
+
+# append results of this study to previous results
+new_res = {
+    "n_trials": args.ntrials,
+    "best_params": study.best_params
+}
+
+# Open the file in append mode and write the new entry
+with open(args.output_path, 'a') as f:
+    f.write(json.dumps(new_res, indent=4) + '\n')
