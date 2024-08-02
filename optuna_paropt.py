@@ -74,7 +74,7 @@ def generate_command(optimized_param_str):
     if args.model == 'gru4rec':
         command = 'python "{}" "{}" -t "{}" -g {} -ps {},{} -m {} -pm {} -lpm -e {} -d {} -ik {} -sk {} -tk {} -l {}'.format(args.prog_path, args.path, args.test, args.gru4rec_model, args.fixed_parameters, optimized_param_str, args.measure, args.primary_metric, args.eval_type, args.device, args.item_key, args.session_key, args.time_key, args.load_model)
     elif args.model == 'ex2vec':
-        command = 'python "{}" -ep "{}" -ps {}'.format(args.prog_path, args.embds_path, optimized_param_str)
+        command = 'python "{}" -ep "{}" -ps {}, -pm {}'.format(args.prog_path, args.embds_path, optimized_param_str, args.primary_metric)
     return command
 
 def train_and_eval(optimized_param_str):
