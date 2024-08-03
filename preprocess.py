@@ -41,10 +41,10 @@ df = df.sort_values(by="timestamp", ascending=True)
 
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
-    # sample 500 random unique userIDs
-    random_user_ids = np.random.choice(df['userId'], size=50, replace=False)
-    # filter full dataset to only contain interactions from the 500 randomly selected users
-    df_sm = df[df['userId'].isin(random_user_ids)]
+    # sample first 1000 unique userIDs
+    selected_user_ids = np.arange(1750)
+    # filter full dataset to only contain interactions from the first 1000 selected users
+    df_sm = df[df['userId'].isin(selected_user_ids)]
     # resort new dataframe
     df_sm = df_sm.sort_values(by='timestamp', ascending=True)
     df = df_sm # replace old, full dataset
@@ -69,6 +69,7 @@ New data-splitting technique:
 """
 
 # 5-core filtering, filter out users and items with interactions under a certain threshold
+
 FILTERING_THRESHOLD = 5
 
 user_interactions_cnt = df.groupby('userId').size()

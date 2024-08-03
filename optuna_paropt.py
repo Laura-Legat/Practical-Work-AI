@@ -1,12 +1,14 @@
 import argparse
 import shutil
 import optuna
-import json # since optimization files are in JSON format
+import json
 import pexpect
 import re
 import os
 import importlib
 from collections import OrderedDict
+import pandas as pd
+import pickle
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -19,9 +21,12 @@ parser.add_argument('-nt', '--ntrials', metavar='NT', type=int, nargs='?', defau
 parser.add_argument('-p', '--prog_path', type=str, help='Python training script path.')
 parser.add_argument('-o', '--output_path', type=str, help='Path of file where to save best parameters of study.')
 parser.add_argument('-mo', '--model', type=str, default='ex2vec', help='The model on which to optimize (type ex2vec or gru4rec).')
+parser.add_argument('-f', '--final_run', type=str, default='N', help='Whether (Y) or not (N) to re-train the model on the best parameters (Default: N).')
+parser.add_argument('-ovc', '--optuna_vis_csv', type=str, help='Path to store optuna study dataframe')
+parser.add_argument('-ovp', '--optuna_vis_pkl', type=str, help='Path to store optuna study object')
 
 #Ex2Vec specific args
-parser.add_argument('-ep', '--embds_path', type=str, default=None, help='Path to the pretrained GRU4Rec trained')
+parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
 
 #GRU4Rec specific args
 parser.add_argument('path', metavar='PATH', type=str, help='Path to the training data (TAB separated file (.tsv or .txt) or pickled pandas.DataFrame object (.pickle)) (if the --load_model parameter is NOT provided) or to the serialized model (if the --load_model parameter is provided).')
@@ -38,19 +43,6 @@ parser.add_argument('-tk', '--time_key', metavar='TK', type=str, default='Time',
 parser.add_argument('-l', '--load_model', action='store_true', help='Load an already trained model instead of training a model. Mutually exclusive with the -ps (--parameter_string) and the -pf (--parameter_file) arguments and one of the three must be provided.')
 
 args = parser.parse_args() # store command line args into args variable
-
-
-if args.parameter_file: # load training params from file
-    param_file_path = os.path.abspath(args.parameter_file) # get absolute path of parameter file
-    param_dir, param_file = os.path.split(param_file_path) # split path into directory and file name
-    spec = importlib.util.spec_from_file_location(param_file.split('.py')[0], os.path.abspath(args.parameter_file)) #where to find python file and how to load it
-    params = importlib.util.module_from_spec(spec) # create empty module based on spec
-    spec.loader.exec_module(params) # executes the paramfile .py
-    gru4rec_params = params.gru4rec_params # accesses the stored params
-    print('Loaded parameters from file: {}'.format(param_file_path))
-
-    # convert to string
-    gru4rec_params_str = ",".join([f'{key}={repr(val)}' for key,val in gru4rec_params.items()])
 
 class Parameter:
     def __init__(self, name, dtype, values, step=None, log=False):
@@ -83,20 +75,32 @@ class Parameter:
             desc += ' \t options: [{}]'.format(','.join([str(x) for x in self.values]))
         return desc
     
-def generate_command(gru4rec_fixed_param_str, optimized_param_str):
+def generate_command(optimized_param_str, tuning=True) -> str:
     """
     Generate a command as a string for executing a Python script run.py with several parameters.
+
+    Args:
+        optimized_param_str: String containing the parameters which to optimize and their sampled value for the current run -> str
+    Returns:
+        command: The command line string which to execute -> str
     """
     command = ''
     if args.model == 'gru4rec':
         command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure)
-        #command = 'python "{}" "{}" -t "{}" -g {} -ps {},{} -pm {} -lpm -e {} -d {} -ik {} -sk {} -tk {} -l {}'.format(args.prog_path, args.path, args.test, args.gru4rec_model, gru4rec_fixed_param_str, optimized_param_str, args.primary_metric, args.eval_type, args.device, args.item_key, args.session_key, args.time_key, args.load_model)
     elif args.model == 'ex2vec':
-        command = 'python "{}" -ep "{}" -ps {}, -pm {}, -t {}'.format(args.prog_path, args.embds_path, optimized_param_str, args.primary_metric, True)
+        command = 'python "{}" -ep "{}" -ps {}, -pm {}, -t {}'.format(args.prog_path, args.embds_path, optimized_param_str, args.primary_metric, tuning)
     return command
 
-def train_and_eval(gru4rec_fixed_param_str, optimized_param_str):
-    command = generate_command(gru4rec_fixed_param_str, optimized_param_str) # get execution command
+def train_and_eval(optimized_param_str):
+    """
+    Execute training script and report results.
+
+    Args:
+        optimized_param_str: String containing the parameters which to optimize and their sampled value for the current run -> str
+    Returns:
+        val: The result of the chosen metric for the current run -> float
+    """
+    command = generate_command(optimized_param_str) # get execution command
     cmd = pexpect.spawnu(command, timeout=None, maxread=1) # run command in a spawned subprocess
     line = cmd.readline() # read in first line that the model outputs
     val = 0
@@ -110,15 +114,15 @@ def train_and_eval(gru4rec_fixed_param_str, optimized_param_str):
         line = cmd.readline()
     return val # return primary metric's value
     
-def objective(trial, par_space, gru4rec_fixed_param_str):
+def objective(trial, par_space):
     """
-    The function defining the Optuna optimization process.
+    Defining the Optuna optimization process.
 
     Args:
-        trial: Represents a single optimization run
-        par_space: List of parameters to be optimized
+        trial: Represents a single optimization run -> Optuna Trial object
+        par_space: List of parameters to be optimized -> List
     Returns:
-        metric: The result on the chosen metric for the current training run.
+        metric: The result of the chosen metric for the current run  -> float
     """
     # create whole parameter string
     optimized_param_str = []
@@ -126,7 +130,7 @@ def objective(trial, par_space, gru4rec_fixed_param_str):
         val = par(trial) # sampled value from specified 'values' field
         optimized_param_str.append('{}={}'.format(par.name,val)) # e.g. loss=bpr-max
     optimized_param_str = ','.join(optimized_param_str) # e.g. loss=bpr-max,embedding=0,...
-    metric = train_and_eval(gru4rec_fixed_param_str, optimized_param_str)
+    metric = train_and_eval(optimized_param_str)
     return metric
 
 par_space = []
@@ -140,7 +144,7 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
     print('-'*80)
 
 study = optuna.create_study(direction='maximize') # goal is to maximize val which is returned from the objective function
-study.optimize(lambda trial: objective(trial, par_space, gru4rec_params_str), n_trials=args.ntrials) # run objective function for a numer of ntrials iterations
+study.optimize(lambda trial: objective(trial, par_space), n_trials=args.ntrials) # run objective function for a numer of ntrials iterations
 
 # append results of this study to previous results
 new_res = {
@@ -152,4 +156,21 @@ new_res = {
 with open(args.output_path, 'a') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
-#TODO: retrain whole model with train + val set and do eval on the test set
+study.trials_dataframe().to_csv(args.optuna_vis_csv)
+
+with open(args.optuna_vis_pkl, 'wb') as f:
+    pickle.dump(study, f)
+
+# retrain model using best parameters
+if args.final_run == 'Y':
+  print('Preparing for final training...')
+  optimized_param_str = ','.join(['{}={}'.format(k,v) for k,v in study.best_params.items()])
+  # generate final command with tuning flag set to false such that final model is saved
+  command = generate_command(optimized_param_str, tuning=False)
+  print('Start final training...')
+  cmd = pexpect.spawnu(command, timeout=None, maxread=1) # run command in a spawned subprocess
+  line = cmd.readline()
+  while line:
+      line = line.strip() # remove leading and trailing whitespaces
+      print(line)
+      line = cmd.readline()
