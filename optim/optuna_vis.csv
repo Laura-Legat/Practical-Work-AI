@@ -1,0 +1,2 @@
+,number,value,datetime_start,datetime_complete,duration,params_BS,params_LR,params_l2_regularization,params_num_epoch,state
+0,0,0.5412500329735247,2024-08-03 16:17:56.802680,2024-08-03 16:18:40.875882,0 days 00:00:44.073202,1024,0.0005114911547505407,0.00034365107089418787,1,COMPLETE
