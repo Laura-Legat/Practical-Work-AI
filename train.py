@@ -6,7 +6,7 @@ import os
 import shutil
 import torch
 import sys
-sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_PyTorch_Fork')
+sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_Fork')
 import gru4rec_pytorch
 import json
 import optuna

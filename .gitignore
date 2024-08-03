@@ -2,7 +2,8 @@ data/
 models/
 runs/
 TODOS.txt
-__pycache__/
-.ipynb_checkpoints/
+__pycache__
 explanations/
 chckpts/
+data_1750users/
+optim/optuna_study.db

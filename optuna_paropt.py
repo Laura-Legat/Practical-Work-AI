@@ -24,6 +24,8 @@ parser.add_argument('-mo', '--model', type=str, default='ex2vec', help='The mode
 parser.add_argument('-f', '--final_run', type=str, default='N', help='Whether (Y) or not (N) to re-train the model on the best parameters (Default: N).')
 parser.add_argument('-ovc', '--optuna_vis_csv', type=str, help='Path to store optuna study dataframe')
 parser.add_argument('-ovp', '--optuna_vis_pkl', type=str, help='Path to store optuna study object')
+parser.add_argument('-sp', '--storage_path', type=str, help='Path where to store Optuna study/where to resume it from.')
+parser.add_argument('-sn', '--study_name', type=str, help='Unique study name to be associated with current study.')
 
 #Ex2Vec specific args
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
@@ -32,7 +34,6 @@ parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to t
 parser.add_argument('path', metavar='PATH', type=str, help='Path to the training data (TAB separated file (.tsv or .txt) or pickled pandas.DataFrame object (.pickle)) (if the --load_model parameter is NOT provided) or to the serialized model (if the --load_model parameter is provided).')
 parser.add_argument('-t', '--test', metavar='TEST_PATH', type=str, help='Path to the test data set(s) located at TEST_PATH. Multiple test sets can be provided (separate with spaces). (Default: don\'t evaluate the model)')
 parser.add_argument('-g', '--gru4rec_model', metavar='GRFILE', type=str, default='gru4rec_pytorch', help='Name of the file containing the GRU4Rec class. Can be used to select different varaiants. (Default: gru4rec_pytorch)')
-parser.add_argument('-pf', '--parameter_file', metavar='PARAM_PATH', type=str, help='Alternatively, training parameters can be set using a config file specified in this argument. The config file must contain a single OrderedDict named `gru4rec_params`. The parameters must have the appropriate type (e.g. layers = [100]). Mutually exclusive with the -ps (--parameter_string) and the -l (--load_model) arguments and one of the three must be provided.')
 parser.add_argument('-m', '--measure', metavar='AT', type=str, default=[20], help='Measure recall & MRR at the defined recommendation list length(s). Multiple values can be provided. (Default: 20)')
 parser.add_argument('-pm', '--primary_metric', metavar='METRIC', choices=['recall', 'mrr'], default='recall', help='Set primary metric, recall or mrr (e.g. for paropt). (Default: recall)')
 parser.add_argument('-e', '--eval_type', metavar='EVAL_TYPE', choices=['standard', 'conservative', 'median'], default='standard', help='Sets how to handle if multiple items in the ranked list have the same prediction score (which is usually due to saturation or an error). See the documentation of batch_eval() in evaluation.py for further details. (Default: standard)')
@@ -129,6 +130,14 @@ def objective(trial, par_space):
     for par in par_space: # for each parameter
         val = par(trial) # sampled value from specified 'values' field
         optimized_param_str.append('{}={}'.format(par.name,val)) # e.g. loss=bpr-max
+
+    param_dict = {par.name: par(trial) for par in par_space}
+
+    # Enforce constraint: if constrained_embedding is True, embedding must be 0
+    if param_dict.get('constrained_embedding') and param_dict.get('embedding') != 0:
+        param_dict['embedding'] = 0
+        optimized_param_str.append('embedding=0')
+
     optimized_param_str = ','.join(optimized_param_str) # e.g. loss=bpr-max,embedding=0,...
     metric = train_and_eval(optimized_param_str)
     return metric
@@ -143,7 +152,7 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
         par_space.append(par)
     print('-'*80)
 
-study = optuna.create_study(direction='maximize') # goal is to maximize val which is returned from the objective function
+study = optuna.create_study(study_name=args.study_name, storage = args.storage_path, direction='maximize', load_if_exists=True) # goal is to maximize val which is returned from the objective function
 study.optimize(lambda trial: objective(trial, par_space), n_trials=args.ntrials) # run objective function for a numer of ntrials iterations
 
 # append results of this study to previous results

@@ -1,0 +1,20 @@
+{
+    "n_trials": 1,
+    "best_params": {
+        "loss": "cross-entropy",
+        "constrained_embedding": false,
+        "embedding": 0,
+        "elu_param": 0.5,
+        "layers": 64,
+        "n_epochs": 10,
+        "batch_size": 320,
+        "dropout_p_embed": 0.0,
+        "dropout_p_hidden": 0.65,
+        "learning_rate": 0.016,
+        "momentum": 0.9,
+        "n_sample": 256,
+        "sample_alpha": 0.9,
+        "bpreg": 0.9500000000000001,
+        "logq": 0.0
+    }
+}
