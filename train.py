@@ -24,8 +24,10 @@ parser.add_argument('-t', '--tuning', type=str, default=False, help='Set whether
 parser.add_argument('-pm', '--primary_metric', type=str, default='f1', help='Set the primary metric to optimize for (acc, recall, f1, bacc).')
 args = parser.parse_args() # store command line args into args variable
 
+ex2vec_params = None
 if args.param_str: # if parameter string is provided, parse it and create an ordered dict of params
     ex2vec_params = OrderedDict([x.split('=') for x in args.parameter_str.split(',')]) # splits e.g. "loss=bpr" to {"loss":"bpr"}
+print('Ex2vec params: ', ex2vec_params)
 
 n_user, n_item = data_sampler.get_n_users_items() # get number of unique users and number of unique items
 
@@ -33,6 +35,8 @@ n_user, n_item = data_sampler.get_n_users_items() # get number of unique users a
 BS = 512  # , 1024, 2048]
 LR = 5e-5  # [5e-5, 1e-4, 5e-3, 0.0002, 0.00075, 0.001]
 L_DIM = 64
+NUM_EPOCH = 5
+L2_REG = 0.001
 
 # construct unique training configuration
 alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
@@ -40,15 +44,15 @@ alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
 # config for training ex2vec model
 config = {
     "alias": alias,
-    "num_epoch": 5,
-    "batch_size": BS,
+    "num_epoch": ex2vec_params['num_epoch'] if ex2vec_params else NUM_EPOCH,
+    "batch_size": ex2vec_params['BS'] if ex2vec_params else BS,
     "optimizer": "adam",
-    "adam_lr": LR,
+    "adam_lr": ex2vec_params['LR'] if ex2vec_params else LR,
     "n_users": n_user,
     "n_items": n_item,
     "latent_dim": L_DIM,
     "num_negative": 0,
-    "l2_regularization": 0.001,
+    "l2_regularization": ex2vec_params['l2_regularization'] if ex2vec_params else L2_REG,
     "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
@@ -91,4 +95,5 @@ for epoch in range(config["num_epoch"]): # loop over epochs in config
     if curr_metric > best_metric:
          best_metric = curr_metric
 
-print(best_metric)
+res_str = f"PRIMARY METRIC: {best_metric}"
+print(res_str)

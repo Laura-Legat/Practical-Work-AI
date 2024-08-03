@@ -31,7 +31,7 @@ def get_delta_t(row):
 
 
 # defines path for raw deezer dataset
-DATA_PATH = 'G:/My Drive/JKU/practical_work/Practical-Work-AI/data/'
+DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
 
 orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
@@ -42,7 +42,7 @@ df = df.sort_values(by="timestamp", ascending=True)
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
     # sample 500 random unique userIDs
-    random_user_ids = np.random.choice(df['userId'], size=500, replace=False)
+    random_user_ids = np.random.choice(df['userId'], size=50, replace=False)
     # filter full dataset to only contain interactions from the 500 randomly selected users
     df_sm = df[df['userId'].isin(random_user_ids)]
     # resort new dataframe
