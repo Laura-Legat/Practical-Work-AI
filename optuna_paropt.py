@@ -21,7 +21,6 @@ parser.add_argument('-nt', '--ntrials', metavar='NT', type=int, nargs='?', defau
 parser.add_argument('-p', '--prog_path', type=str, help='Python training script path.')
 parser.add_argument('-o', '--output_path', type=str, help='Path of file where to save best parameters of study.')
 parser.add_argument('-mo', '--model', type=str, default='ex2vec', help='The model on which to optimize (type ex2vec or gru4rec).')
-parser.add_argument('-f', '--final_run', type=str, default='N', help='Whether (Y) or not (N) to re-train the model on the best parameters (Default: N).')
 parser.add_argument('-ovc', '--optuna_vis_csv', type=str, help='Path to store optuna study dataframe')
 parser.add_argument('-ovp', '--optuna_vis_pkl', type=str, help='Path to store optuna study object')
 parser.add_argument('-sp', '--storage_path', type=str, help='Path where to store Optuna study/where to resume it from.')
@@ -29,6 +28,7 @@ parser.add_argument('-sn', '--study_name', type=str, help='Unique study name to 
 
 #Ex2Vec specific args
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
+
 
 #GRU4Rec specific args
 parser.add_argument('path', metavar='PATH', type=str, help='Path to the training data (TAB separated file (.tsv or .txt) or pickled pandas.DataFrame object (.pickle)) (if the --load_model parameter is NOT provided) or to the serialized model (if the --load_model parameter is provided).')
@@ -76,7 +76,7 @@ class Parameter:
             desc += ' \t options: [{}]'.format(','.join([str(x) for x in self.values]))
         return desc
     
-def generate_command(optimized_param_str, tuning=True) -> str:
+def generate_command(optimized_param_str) -> str:
     """
     Generate a command as a string for executing a Python script run.py with several parameters.
 
@@ -89,7 +89,7 @@ def generate_command(optimized_param_str, tuning=True) -> str:
     if args.model == 'gru4rec':
         command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure)
     elif args.model == 'ex2vec':
-        command = 'python "{}" -ep "{}" -ps {}, -pm {}, -t {}'.format(args.prog_path, args.embds_path, optimized_param_str, args.primary_metric, tuning)
+        command = 'python "{}" -ep "{}" -ps {}, -pm {}, -t {}'.format(args.prog_path, args.embds_path, optimized_param_str, args.primary_metric, "Y")
     return command
 
 def train_and_eval(optimized_param_str):
@@ -162,24 +162,12 @@ new_res = {
 }
 
 # Open the file in append mode and write the new entry
-with open(args.output_path, 'a') as f:
+with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
+# save info about current study
 study.trials_dataframe().to_csv(args.optuna_vis_csv)
 
+# save current study for visualizations
 with open(args.optuna_vis_pkl, 'wb') as f:
     pickle.dump(study, f)
-
-# retrain model using best parameters
-if args.final_run == 'Y':
-  print('Preparing for final training...')
-  optimized_param_str = ','.join(['{}={}'.format(k,v) for k,v in study.best_params.items()])
-  # generate final command with tuning flag set to false such that final model is saved
-  command = generate_command(optimized_param_str, tuning=False)
-  print('Start final training...')
-  cmd = pexpect.spawnu(command, timeout=None, maxread=1) # run command in a spawned subprocess
-  line = cmd.readline()
-  while line:
-      line = line.strip() # remove leading and trailing whitespaces
-      print(line)
-      line = cmd.readline()

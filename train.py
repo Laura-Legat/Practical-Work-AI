@@ -20,7 +20,7 @@ class MyHelpFormatter(argparse.HelpFormatter):
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Train an Ex2Vec model.')
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the GRU4Rec trained model')
 parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize')
-parser.add_argument('-t', '--tuning', type=str, default=False, help='Set whether this is a run with or without hyperparameter tuning.')
+parser.add_argument('-t', '--tuning', type=str, default="N", help='Set whether this is a run with or without hyperparameter tuning.')
 parser.add_argument('-pm', '--primary_metric', type=str, default='f1', help='Set the primary metric to optimize for (acc, recall, f1, bacc).')
 args = parser.parse_args() # store command line args into args variable
 
@@ -34,7 +34,7 @@ n_user, n_item = data_sampler.get_n_users_items() # get number of unique users a
 BS = 512  # , 1024, 2048]
 LR = 5e-5  # [5e-5, 1e-4, 5e-3, 0.0002, 0.00075, 0.001]
 L_DIM = 64
-NUM_EPOCH = 5
+NUM_EPOCH = 10
 L2_REG = 0.001
 
 # construct unique training configuration
@@ -52,7 +52,7 @@ config = {
     "latent_dim": L_DIM,
     "num_negative": 0,
     "l2_regularization": float(ex2vec_params['l2_regularization']) if ex2vec_params else L2_REG,
-    "use_cuda": False,
+    "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
     "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",
@@ -70,7 +70,10 @@ engine = Ex2VecEngine(config)
 train_loader = data_sampler.instance_a_train_loader(BS)
 
 # change setting to using testing vs validation set for evaluation, 0 = val, 1 = test
-use_test = 0
+if args.tuning == "Y":
+    use_test = 0
+else:
+    use_test = 1
 
 eval_data = data_sampler.evaluate_data(use_test)
 
@@ -92,7 +95,7 @@ for epoch in range(config["num_epoch"]): # loop over epochs in config
     elif args.primary_metric == 'bacc':
         curr_metric = bacc
 
-    if args.tuning == False:
+    if args.tuning == "N":
         engine.save(config["alias"], epoch, curr_metric) # save model chkpt
     if curr_metric > best_metric:
          best_metric = curr_metric

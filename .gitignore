@@ -5,5 +5,10 @@ TODOS.txt
 __pycache__
 explanations/
 chckpts/
-data_1750users/
-optim/optuna_study.db
+data_sm/
+optim/optuna_study_gru4rec.db
+optim/optuna_study_ex2vec.db
+optim/optuna_vis_gru4rec.csv
+optim/optuna_study_gru4rec.pkl
+optim/optuna_vis_ex2vec.csv
+optim/optuna_study_ex2vec.pkl
