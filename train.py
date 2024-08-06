@@ -40,13 +40,17 @@ L2_REG = 0.001
 # construct unique training configuration
 alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
 
+
+
 # config for training ex2vec model
 config = {
     "alias": alias,
     "num_epoch": int(ex2vec_params['num_epoch']) if ex2vec_params else NUM_EPOCH,
-    "batch_size": int(ex2vec_params['BS']) if ex2vec_params else BS,
+    "batch_size": int(ex2vec_params['batch_size']) if ex2vec_params else BS,
     "optimizer": "adam",
-    "adam_lr": float(ex2vec_params['LR']) if ex2vec_params else LR,
+    "lr": float(ex2vec_params['learning_rate']) if ex2vec_params else LR, # can be used for adam, sgd, rmsprop
+    "rmsprop_alpha": float(ex2vec_params['rmsprop_alpha']) if ex2vec_params else 0.99,
+    "momentum": float(ex2vec_params['momentum']) if ex2vec_params else 0, # can be used for sgd_momentum and rmsprop_momentum
     "n_users": n_user,
     "n_items": n_item,
     "latent_dim": L_DIM,
