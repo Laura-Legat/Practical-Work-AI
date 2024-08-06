@@ -161,7 +161,7 @@ new_res = {
     "best_params": study.best_params
 }
 
-# Open the file in append mode and write the new entry
+# store the current best params
 with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 

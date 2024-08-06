@@ -40,8 +40,6 @@ L2_REG = 0.001
 # construct unique training configuration
 alias = "ex2vec_" + "BS" + str(BS) + "LR" + str(LR) + "L_DIM" + str(L_DIM)
 
-
-
 # config for training ex2vec model
 config = {
     "alias": alias,
