@@ -41,10 +41,17 @@ df = df.sort_values(by="timestamp", ascending=True)
 
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
-    # sample first 100 unique userIDs
-    selected_user_ids = np.random.choice(df['userId'], size=100)
-    # filter full dataset to only contain interactions from the first 1000 selected users
+    # sample random 500 unique userIDs
+    selected_user_ids = np.random.choice(df['userId'], size=500)
     df_sm = df[df['userId'].isin(selected_user_ids)]
+
+    # create ID -> index maps to avoid embedding errors
+    user_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['userId'].unique())}
+    item_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['itemId'].unique())}
+
+    df_sm['userId'] = df_sm['userId'].map(user_mapping)
+    df_sm['itemId'] = df_sm['itemId'].map(item_mapping)
+
     # resort new dataframe
     df_sm = df_sm.sort_values(by='timestamp', ascending=True)
     df = df_sm # replace old, full dataset
