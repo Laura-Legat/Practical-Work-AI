@@ -46,10 +46,12 @@ item_pool = set(df["itemId"].unique())
 df_test = df[df["set"] == "test"].copy()
 df_val = df[df["set"] == "val"].copy()
 df_train = df[(df["set"] == "train")].copy()
+df_combined = df[df["set"].isin(["train", "val"])].copy()
 
 print("The size of the training set is: {}".format(len(df_train)))
 print("The size of the validation set is: {}".format(len(df_val)))
 print("The size of the test set is: {}".format(len(df_test)))
+print("The size of the combined (train+val) set is: {}".format(len(df_combined)))
 
 
 # function that returns the train, val and test set
@@ -62,12 +64,20 @@ def get_n_users_items():
     return df.userId.nunique(), df.itemId.nunique()
 
 # build the training set in batches
-def instance_a_train_loader(batch_size):
+def instance_a_train_loader(batch_size, use_test="N"):
     users, items, rel_int, interests = [], [], [], []
-    # make copy of training set
-    train_stream = (
-        df_train.copy()
-    )  # merge(df_negative[["userId", "negative_items"]], on="userId")
+
+    if use_test =="Y":
+        # combine val and train as train
+        print("Using combined training set.")
+        train_stream = (
+          df_combined.copy()
+        )
+    else:
+        # make copy of training set
+        train_stream = (
+            df_train.copy()
+        )  # merge(df_negative[["userId", "negative_items"]], on="userId")
 
     for row in train_stream.itertuples(): # loop over each df row as itertuples, aka named tuples, for readability
         # values are extracted from csv and appended to respective lists

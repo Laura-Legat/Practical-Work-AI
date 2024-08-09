@@ -12,3 +12,6 @@ optim/optuna_vis_gru4rec.csv
 optim/optuna_study_gru4rec.pkl
 optim/optuna_vis_ex2vec.csv
 optim/optuna_study_ex2vec.pkl
+combined_train.py
+ideas.txt
+trialdumps/

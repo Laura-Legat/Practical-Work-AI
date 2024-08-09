@@ -60,8 +60,6 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         user_embeddings = self.embedding_user(user_indices)
 
         if embds_path != '': # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
-            print(embds_path)
-            print(type(embds_path))
             all_item_embds = self.load_GRU4Rec_weights(embds_path)
             item_embeddings = all_item_embds[item_indices]
         else:
