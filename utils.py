@@ -17,7 +17,6 @@ def resume_checkpoint(model, model_dir, device_id):
     ) 
     model.load_state_dict(state_dict) # load state dict into provided model
 
-
 # Hyper params
 def use_cuda(enabled, device_id=0):
     if enabled: # if enabled, check CUDA support -> if that is available, set device to specified cuda device

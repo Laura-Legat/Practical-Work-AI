@@ -53,6 +53,30 @@ print("The size of the validation set is: {}".format(len(df_val)))
 print("The size of the test set is: {}".format(len(df_test)))
 print("The size of the combined (train+val) set is: {}".format(len(df_combined)))
 
+def get_rel_ints(userids, itemids):
+    """
+    Gets the latest relational interval comprising all past listening events between a user and an item.
+
+    Args:
+        userid: The users for which (in combination with a certain item) to get the relational interval -> List
+        itemid: The items for which (in combination with a certain user) to get the relational interval -> List
+
+    Returns:
+        rel_ints: The last relational interval value for each user-item pair -> List
+    """
+    rel_ints = []
+    for userid, itemid in zip(userids, itemids):
+        # get only user-item interactions of given user and item
+        df_filtered = df_combined[(df_combined['userId'] == userid) & (df_combined['itemId'] == itemid)]
+
+        if df_filtered.empty: # if there is no past relational interval, append empty list
+            last_rel_int = []
+        else:
+            # sort interactions by timestamp and slice off last relational interval value
+            df_filtered.sort_values(by='timestamp')
+            last_rel_int = df_filtered.iloc[-1]['relational_interval']
+        rel_ints.append(last_rel_int)
+    return rel_ints
 
 # function that returns the train, val and test set
 def get_train_test_val():
@@ -104,7 +128,7 @@ def instance_a_train_loader(batch_size, use_test="N"):
 
 # create the evaluation dataset (user x item consumption sequences)
 # preoare evaluation dataset by extracting relevant information from df_val and formatting it into tensors for evaluation by the model
-def evaluate_data(val_or_test=0):
+def evaluate_data(val_or_test=0, custom_eval_data=None):
     """
     Args:
         val_or_test: Boolean variable whether the validation set (val_or_test=0), or the test set (val_or_test=1) should be used for evaluation
@@ -115,9 +139,12 @@ def evaluate_data(val_or_test=0):
     if val_or_test == 0:
         print("Using validation set for evaluation\n")
         df_eval = df_val
-    else:
+    elif val_or_test == 1:
         print("Using test set for evaluation\n")
         df_eval = df_test
+    else:
+        print('Using custom data set')
+        df_eval = custom_eval_data
 
     for row in df_eval.itertuples():
         ri = row.relational_interval

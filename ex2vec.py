@@ -117,17 +117,25 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         ex2vec_pre = Ex2Vec(config) # set up model with that config
         if config["use_cuda"] is True:
             ex2vec_pre.cuda() # move model to GPU
+            ex2vec_pre.load_state_dict(torch.load(config['pretrain_dir']))
 
-            resume_checkpoint(
-                ex2vec_pre,
-                model_dir=config["pretrain_dir"],
-                device_id=config["device_id"],
-            ) # load pre-trained state dict into model 
+            #resume_checkpoint(
+            #    ex2vec_pre,
+            #    model_dir=config["pretrain_dir"],
+            #    device_id=config["device_id"],
+            #) # load pre-trained state dict into model 
 
-        # embeddings
-        # copy weights of embedding layers from pre-trained Ex2Vec to current Ex2Vec model
+        # copy state dict of pretrained ex2vec model to currently initiated ex2vec model
         self.embedding_user.weight.data = ex2vec_pre.embedding_user.weight.data
         self.embedding_item.weight.data = ex2vec_pre.embedding_item.weight.data
+        self.item_bias.weight.data = ex2vec_pre.item_bias.weight.data
+        self.user_bias.weight.data = ex2vec_pre.user_bias.weight.data
+        self.user_lamb.weight.data = ex2vec_pre.user_lamb.weight.data
+        self.cutoff.data = ex2vec_pre.cutoff.data
+        self.gamma.data = ex2vec_pre.gamma.data
+        self.beta.data = ex2vec_pre.beta.data
+        self.alpha.data = ex2vec_pre.alpha.data
+        self.global_lamb.data = ex2vec_pre.global_lamb.data
 
     def load_GRU4Rec_weights(self, GRU4RecModel_path):
         # sets up pre-trained item embeddings as part of Ex2Vec pipeline
