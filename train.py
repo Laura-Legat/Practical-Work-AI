@@ -22,7 +22,7 @@ parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to t
 parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize')
 parser.add_argument('-t', '--tuning', type=str, default="N", help='Set whether this is a run with or without hyperparameter tuning.')
 parser.add_argument('-n', '--name', type=str, default='ex2vec', help='Set the alias for the model.')
-parser.add_argument('-ut', '--use_test', type=str, default='N', help='Whether or not to use the test set for validation.')
+parser.add_argument('-ud', '--use_dataset', type=int, default=0, help='Which set to use for validation for the current run. Modes: 0 = Validation, 1 = Test, 2 = Custom (Default = 0).')
 
 args = parser.parse_args() # store command line args into args variable
 
@@ -75,15 +75,9 @@ for k,v in config.items():
 # initialize ex2vec engine with above configuration
 engine = Ex2VecEngine(config)
 
-train_loader = data_sampler.instance_a_train_loader(BS, args.use_test)
-
-# change setting to using testing vs validation set for evaluation, 0 = val, 1 = test
-if args.use_test == "N":
-    use_test = 0
-else:
-    use_test = 1
-
-eval_data = data_sampler.evaluate_data(use_test)
+# prepare data
+train_loader = data_sampler.instance_a_train_loader(BS, args.use_dataset)
+eval_data = data_sampler.evaluate_data(args.use_dataset)
 
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])

@@ -88,10 +88,10 @@ def get_n_users_items():
     return df.userId.nunique(), df.itemId.nunique()
 
 # build the training set in batches
-def instance_a_train_loader(batch_size, use_test="N"):
+def instance_a_train_loader(batch_size, dataset_mode=0):
     users, items, rel_int, interests = [], [], [], []
 
-    if use_test =="Y":
+    if dataset_mode == 1: # aka test set is used for eval, thus combine val + train for training loop
         # combine val and train as train
         print("Using combined training set.")
         train_stream = (
@@ -128,18 +128,19 @@ def instance_a_train_loader(batch_size, use_test="N"):
 
 # create the evaluation dataset (user x item consumption sequences)
 # preoare evaluation dataset by extracting relevant information from df_val and formatting it into tensors for evaluation by the model
-def evaluate_data(val_or_test=0, custom_eval_data=None):
+def evaluate_data(dataset_mode=0, custom_eval_data=None):
     """
     Args:
-        val_or_test: Boolean variable whether the validation set (val_or_test=0), or the test set (val_or_test=1) should be used for evaluation
+        dataset_mode: Which set to use for validation for the current run. Modes: 0 = Validation, 1 = Test, 2 = Custom -> int
+        custom_eval_data: If dataset mode == 2, then custom dataset is used, which is relayed to the function via this parameter -> Pandas DataFrame
     """
     test_users, test_items, test_rel_int, test_listen = [], [], [], []
 
     # change whether validation or test set is used for evaluation of the model
-    if val_or_test == 0:
+    if dataset_mode == 0:
         print("Using validation set for evaluation\n")
         df_eval = df_val
-    elif val_or_test == 1:
+    elif dataset_mode == 1:
         print("Using test set for evaluation\n")
         df_eval = df_test
     else:

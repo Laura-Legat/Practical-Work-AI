@@ -54,7 +54,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
         self.logistic = torch.nn.Sigmoid()
 
-    def forward(self, user_indices, item_indices, r_interval, embds_path=None):
+    def forward(self, user_indices, item_indices, r_interval, embds_path=''):
         # calculate u and v for first formula
         # retrieve embedding vectors for each idx in user_indices -> fetch corresponding rows from embedding matrix, e.g. for user_idx=3, it fetches the 3rd user embedding
         user_embeddings = self.embedding_user(user_indices)
