@@ -35,7 +35,7 @@ class InteractionDataset(Dataset):
 DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
 orig_data = DATA_PATH + 'processed.csv'
 
-# read processed.csv into pandas dataframe while converting  relational_interval from string to python list
+# read processed.csv into pandas dataframe while converting  relational_interval from string to python list bc some are saved as strings
 df = pd.read_csv(orig_data, converters={"relational_interval": literal_eval})
 
 # determines unique users and items in dataset
@@ -52,6 +52,27 @@ print("The size of the training set is: {}".format(len(df_train)))
 print("The size of the validation set is: {}".format(len(df_val)))
 print("The size of the test set is: {}".format(len(df_test)))
 print("The size of the combined (train+val) set is: {}".format(len(df_combined)))
+
+# create relational interval dict to later use for ex2vec and gru4rec combination 
+df_combined.sort_values(by='timestamp')
+rel_int_dict = {}
+for row in df_combined.itertuples():
+    # create new key for each unique user-item combination
+    key = (row.userId, row.itemId)
+    rel_int_dict[key] = row.relational_interval
+
+def get_rel_int_dict():
+    """
+    Helper function that gets the current dictionary containing the relational intervals for each user-item interaction.
+    """
+    return rel_int_dict
+
+def update_rel_int_dict(userid, itemid, relational_interval):
+    """
+    Helper function that updates the relational interval entry for a specific user-item interaction.
+    """
+    key = (userid, itemid)
+    rel_int_dict[key] = relational_interval
 
 def get_rel_ints(userids, itemids):
     """
