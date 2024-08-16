@@ -74,35 +74,9 @@ def update_rel_int_dict(userid, itemid, relational_interval):
     key = (userid, itemid)
     rel_int_dict[key] = relational_interval
 
-def get_rel_ints(userids, itemids):
-    """
-    Gets the latest relational interval comprising all past listening events between a user and an item.
-
-    Args:
-        userid: The users for which (in combination with a certain item) to get the relational interval -> List
-        itemid: The items for which (in combination with a certain user) to get the relational interval -> List
-
-    Returns:
-        rel_ints: The last relational interval value for each user-item pair -> List
-    """
-    rel_ints = []
-    for userid, itemid in zip(userids, itemids):
-        # get only user-item interactions of given user and item
-        df_filtered = df_combined[(df_combined['userId'] == userid) & (df_combined['itemId'] == itemid)]
-
-        if df_filtered.empty: # if there is no past relational interval, append empty list
-            last_rel_int = []
-        else:
-            # sort interactions by timestamp and slice off last relational interval value
-            df_filtered.sort_values(by='timestamp')
-            last_rel_int = df_filtered.iloc[-1]['relational_interval']
-        rel_ints.append(last_rel_int)
-    return rel_ints
-
 # function that returns the train, val and test set
 def get_train_test_val():
     return df_test, df_train, df_val
-
 
 # function that returns the number of users and items
 def get_n_users_items():
