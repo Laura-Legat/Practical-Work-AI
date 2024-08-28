@@ -101,7 +101,10 @@ def train_and_eval(optimized_param_str):
         optimized_param_str: String containing the parameters which to optimize and their sampled value for the current run -> str
     Returns:
         val: The result of the chosen metric for the current run -> float
+        all_metrics: The results of all other metrics for the current run -> List
     """
+    all_metrics = []
+
     command = generate_command(optimized_param_str) # get execution command
     cmd = pexpect.spawnu(command, timeout=None, maxread=1) # run command in a spawned subprocess
     line = cmd.readline() # read in first line that the model outputs
@@ -109,12 +112,24 @@ def train_and_eval(optimized_param_str):
     while line:
         line = line.strip() # remove leading and trailing whitespaces
         print(line)
+
+        if args.model == 'gru4rec':
+            # match all metrics (recall, mrr...) from gru4rec besides primary metrics
+            matches = re.match('Recall@\\d+: (-*\\d\\.\\d+e*-*\\d*) MRR@\\d+: (-*\\d\\.\\d+e*-*\\d*)', line)
+            if matches:
+                all_metrics.extend([matches.group(1), matches.group(2)])
+        elif args.model == 'ex2vec':
+            # match all metrics (bacc, acc, recall, ...) from ex2vec besides primary metric
+            matches = re.match('FINAL METRICS: ACC: (-*\\d\\.\\d+e*-*\\d*), RECALL: (-*\\d\\.\\d+e*-*\\d*), F1: (-*\\d\\.\\d+e*-*\\d*), BACC: (-*\\d\\.\\d+e*-*\\d*)', line)
+            if matches:
+                all_metrics.extend([matches.group(1), matches.group(2), matches.group(3), matches.group(4)])
+
         if re.match('PRIMARY METRIC: -*\\d\\.\\d+e*-*\\d*', line): # matches lines of the form 'PRIMARY METRIC: [value]'
             t = line.split(':')[1].lstrip() # splits off the '[value]' part
             val = float(t) # converts value to float
             break
         line = cmd.readline()
-    return val # return primary metric's value
+    return val, all_metrics
     
 def objective(trial, par_space):
     """
@@ -140,8 +155,19 @@ def objective(trial, par_space):
         optimized_param_str.append('embedding=0')
 
     optimized_param_str = ','.join(optimized_param_str) # e.g. loss=bpr-max,embedding=0,...
-    metric = train_and_eval(optimized_param_str)
-    return metric
+    primary_metric, all_metrics = train_and_eval(optimized_param_str)
+
+    # dump all metric information alongside current trial number in temporary file
+    curr_trial_id = trial.number
+    all_metrics_log_dict = {
+        'trial_id':curr_trial_id,
+        'all_metrics':all_metrics
+    }
+
+    with open('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.json', 'a') as f:
+        f.write(json.dumps(all_metrics_log_dict) + '\n')
+
+    return primary_metric # return metric to optimize study for
 
 par_space = []
 with open(args.optuna_parameter_file, 'rt') as f: # open json file containing parameters to optimize in read text mode
@@ -194,13 +220,24 @@ with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
 # save info about current study
-trials_df = study.trials_dataframe()
+#trials_df = study.trials_dataframe()
 
-trials_df_copy = trials_df.copy()
+#trials_df_copy = trials_df.copy()
 
-trials_df_copy['search_space_id'] = search_space_id
+#TODO: read out temp file all metrics and based on trial number, assign the col values to the right row
 
-trials_df_copy.to_csv(args.optuna_vis_csv, index=False)
+temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.json'
+if os.path.exists(temp_path):
+    with open(temp_path, 'r') as file:
+        pass
+
+
+#trials_df_copy['search_space_id'] = search_space_id
+
+#trials_df_copy.to_csv(args.optuna_vis_csv, index=False)
+
+#delete temporary file
+os.remove(temp_path)
 
 # save current study for visualizations
 with open(args.optuna_vis_pkl, 'wb') as f:

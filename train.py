@@ -95,5 +95,10 @@ for epoch in range(config["num_epoch"]): # loop over epochs in config
     if curr_metric > best_f1:
          best_f1 = curr_metric
 
+
+# logging all metrics + primary metric at the end of training run
+all_metrics_str = f"FINAL METRICS: ACC: {acc}, RECALL: {recall}, F1: {f1}, BACC: {bacc}"
+print(all_metrics_str)
+
 res_str = f"PRIMARY METRIC: {best_f1}"
 print(res_str)
