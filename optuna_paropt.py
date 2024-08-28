@@ -9,6 +9,7 @@ import importlib
 from collections import OrderedDict
 import pandas as pd
 import pickle
+import csv
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -152,6 +153,33 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
         par_space.append(par)
     print('-'*80)
 
+
+# SEARCH SPACE LOGGING
+# define file where to log search space
+if args.model == 'gru4rec':
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/gru4rec_search_space.csv'
+elif args.model == 'ex2vec':
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_search_space.csv'
+
+# log currently used search space
+with open(par_space_log_path, 'a') as file:
+    n_rows = list(csv.reader(f))
+    if len(n_rows) <= 1:
+        search_space_id = 1
+    else:
+        last_logged_row = n_rows[-1]
+        search_space_id = last_logged_row[0] # get last-logged search space id, which is always in the first column
+    
+    writer = csv.writer(file)
+
+    if file.tell() == 0: # if file is empty
+        writer.writerow(['search_space_id', 'param', 'search_space']) # write header row
+    
+    # log each parameter
+    for par in par_space:
+        writer.writerow([search_space_id, par.name, json.dumps(par.values)])
+
+
 study = optuna.create_study(study_name=args.study_name, storage = args.storage_path, direction='maximize', load_if_exists=True) # goal is to maximize val which is returned from the objective function
 study.optimize(lambda trial: objective(trial, par_space), n_trials=args.ntrials) # run objective function for a numer of ntrials iterations
 
@@ -166,7 +194,13 @@ with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
 # save info about current study
-study.trials_dataframe().to_csv(args.optuna_vis_csv)
+trials_df = study.trials_dataframe()
+
+trials_df_copy = trials_df.copy()
+
+trials_df_copy['search_space_id'] = search_space_id
+
+trials_df_copy.to_csv(args.optuna_vis_csv, index=False)
 
 # save current study for visualizations
 with open(args.optuna_vis_pkl, 'wb') as f:
