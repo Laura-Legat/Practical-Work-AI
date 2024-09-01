@@ -115,14 +115,14 @@ def train_and_eval(optimized_param_str):
 
         if args.model == 'gru4rec':
             # match all metrics (recall, mrr...) from gru4rec besides primary metrics
-            matches = re.match('Recall@\\d+: (-*\\d\\.\\d+e*-*\\d*) MRR@\\d+: (-*\\d\\.\\d+e*-*\\d*)', line)
-            if matches:
-                all_metrics.extend([matches.group(1), matches.group(2)])
+            matches = re.match('Recall@(\\d+): (-*\\d\\.\\d+e*-*\\d*) MRR@(\\d+): (-*\\d\\.\\d+e*-*\\d*)', line)
         elif args.model == 'ex2vec':
             # match all metrics (bacc, acc, recall, ...) from ex2vec besides primary metric
             matches = re.match('FINAL METRICS: ACC: (-*\\d\\.\\d+e*-*\\d*), RECALL: (-*\\d\\.\\d+e*-*\\d*), F1: (-*\\d\\.\\d+e*-*\\d*), BACC: (-*\\d\\.\\d+e*-*\\d*)', line)
-            if matches:
-                all_metrics.extend([matches.group(1), matches.group(2), matches.group(3), matches.group(4)])
+
+        # append all results
+        if matches:
+          all_metrics.append(matches.group(0))
 
         if re.match('PRIMARY METRIC: -*\\d\\.\\d+e*-*\\d*', line): # matches lines of the form 'PRIMARY METRIC: [value]'
             t = line.split(':')[1].lstrip() # splits off the '[value]' part
@@ -157,15 +157,48 @@ def objective(trial, par_space):
     optimized_param_str = ','.join(optimized_param_str) # e.g. loss=bpr-max,embedding=0,...
     primary_metric, all_metrics = train_and_eval(optimized_param_str)
 
-    # dump all metric information alongside current trial number in temporary file
-    curr_trial_id = trial.number
-    all_metrics_log_dict = {
-        'trial_id':curr_trial_id,
-        'all_metrics':all_metrics
-    }
+    # log all metrics as csv and store them in a temporary csv
+    metrics_df = pd.DataFrame()
+    if args.model == 'ex2vec':
+      matches = re.match('FINAL METRICS: ACC: (-*\\d\\.\\d+e*-*\\d*), RECALL: (-*\\d\\.\\d+e*-*\\d*), F1: (-*\\d\\.\\d+e*-*\\d*), BACC: (-*\\d\\.\\d+e*-*\\d*)', all_metrics[0])
+      if matches:
+        acc, recall, f1, bacc = matches.group(1), matches.group(2), matches.group(3), matches.group(4) # extract metrics values
 
-    with open('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.json', 'a') as f:
-        f.write(json.dumps(all_metrics_log_dict) + '\n')
+        # construct new row for temp csv
+        all_metrics_log_dict = {
+          'trial_id': trial.number,
+          'acc': acc,
+          'recall': recall,
+          'f1': f1,
+          'bacc': bacc
+        }
+        metrics_df = pd.DataFrame([all_metrics_log_dict])
+    elif args.model == 'gru4rec':
+        if len(all_metrics) > 0:
+          log_dict = {
+            'trial_id': trial.number
+          }
+          trial_id_df = pd.DataFrame([log_dict])
+          print(trial_id_df)
+
+          # Initialize an empty dictionary to hold all metrics
+          all_metrics_combined = {}
+          for metrics in all_metrics: # since all metrics is a list of recalls/mrr's for each cutoff
+            matches = re.match('Recall@(\\d+): (-*\\d\\.\\d+e*-*\\d*) MRR@(\\d+): (-*\\d\\.\\d+e*-*\\d*)', metrics)
+            # extract recall & mrr values for one cutoff
+            recall = matches.group(2)
+            mrr = matches.group(4)
+
+            all_metrics_combined[f'Recall@{matches.group(1)}'] = recall
+            all_metrics_combined[f'MRR@{matches.group(3)}'] = mrr
+
+          metrics_df = pd.DataFrame([all_metrics_combined])
+          
+          metrics_df = pd.concat([trial_id_df, metrics_df], axis=1)
+    
+    # save temporary metrics file as csv
+    temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.csv'
+    metrics_df.to_csv(temp_path, mode='a', header=not os.path.exists(temp_path), index=False)
 
     return primary_metric # return metric to optimize study for
 
@@ -188,19 +221,21 @@ elif args.model == 'ex2vec':
     par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_search_space.csv'
 
 # log currently used search space
-with open(par_space_log_path, 'a') as file:
-    n_rows = list(csv.reader(f))
-    if len(n_rows) <= 1:
+with open(par_space_log_path, 'r') as file:
+    n_rows = list(csv.reader(file))
+
+    if len(n_rows) <= 1: # only header or empty file
         search_space_id = 1
     else:
         last_logged_row = n_rows[-1]
-        search_space_id = last_logged_row[0] # get last-logged search space id, which is always in the first column
-    
+        search_space_id = int(last_logged_row[0]) + 1
+
+with open(par_space_log_path, mode='a', newline='') as file:
     writer = csv.writer(file)
 
     if file.tell() == 0: # if file is empty
         writer.writerow(['search_space_id', 'param', 'search_space']) # write header row
-    
+
     # log each parameter
     for par in par_space:
         writer.writerow([search_space_id, par.name, json.dumps(par.values)])
@@ -220,23 +255,57 @@ with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
 # save info about current study
-#trials_df = study.trials_dataframe()
+trials_df = study.trials_dataframe()
+trials_df_copy = trials_df.copy()
 
-#trials_df_copy = trials_df.copy()
+optuna_vis_csv_path = args.optuna_vis_csv # path for the optuna vis file containing trial information from previous runs
 
-#TODO: read out temp file all metrics and based on trial number, assign the col values to the right row
+if os.path.exists(optuna_vis_csv_path): # if ths trials csv already exists, aka if this is not the first run of the study
+    optuna_vis_csv = pd.read_csv(optuna_vis_csv_path) # store information from previous runs
+    new_trials = trials_df[~trials_df['number'].isin(optuna_vis_csv['number'])] # filter out new rows from this trial that are not yet part of the optuna vis csv
+    trials_df_copy = pd.concat([optuna_vis_csv, new_trials], ignore_index=True) # concatinate new rows to new trails df
 
-temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.json'
-if os.path.exists(temp_path):
-    with open(temp_path, 'r') as file:
-        pass
+#read out temp file all metrics and based on trial number, assign the col values
+temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.csv'
+if os.path.exists(temp_path) and os.path.getsize(temp_path) >0:
+    metrics_temp_df = pd.read_csv(temp_path)
+    metrics_temp_df['search_space_id'] = search_space_id # add the used search space to the current trial
+
+# merge new column data to trial information where number col = trial_id col, keeping all rows from trials_df_copy and adding additional info from metrics_temp_df
+trials_df_copy = trials_df_copy.merge(metrics_temp_df, left_on='number', right_on='trial_id', how='left')
+trials_df_copy = trials_df_copy.drop(columns=['trial_id']) # drop redundant trial info
+
+if os.path.exists(optuna_vis_csv_path):
+    trials_df_copy = trials_df_copy.drop(columns=['Unnamed: 0']) # drop redundant trial info after merge of new and old
+
+    # combine new ald old columns into the same columns
+    if args.model == 'ex2vec':
+      for col in ['acc', 'recall', 'f1', 'bacc', 'search_space_id']:
+          trials_df_copy[col] = trials_df_copy[f'{col}_x'].combine_first(trials_df_copy[f'{col}_y'])
+          trials_df_copy.drop(columns=[f'{col}_x', f'{col}_y'], inplace=True)
+    elif args.model == 'gru4rec':
+      cols = []
+      col_patterns = [r'Recall@', r'MRR@', r'search_space_id'] # define match patterns since we can have different cutoffs 
+      for pattern in col_patterns:
+        cols.extend([col for col in trials_df_copy.columns if re.search(pattern, col)]) # match all columns which contain recall or mrr scores for varying cutoffs
+
+      print(cols)
+
+      for col in cols:
+          # transform to base cols
+          if col.endswith('_x'):
+            base_col = col[:-2]
+            #print(trials_df_copy)
+            #print(trials_df_copy[f'{base_col}_x'])
+            #print(trials_df_copy[f'{base_col}_y'])
+            trials_df_copy[base_col] = trials_df_copy[f'{base_col}_x'].combine_first(trials_df_copy[f'{base_col}_y'])
+            trials_df_copy.drop(columns=[f'{base_col}_x', f'{base_col}_y'], inplace=True)
 
 
-#trials_df_copy['search_space_id'] = search_space_id
+# save updates trial info csv
+trials_df_copy.to_csv(args.optuna_vis_csv)
 
-#trials_df_copy.to_csv(args.optuna_vis_csv, index=False)
-
-#delete temporary file
+#delete temporary metrics file
 os.remove(temp_path)
 
 # save current study for visualizations
