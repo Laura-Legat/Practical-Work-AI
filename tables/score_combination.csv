@@ -1,0 +1,5 @@
+gru4rec_model_name,ex2vec_model_name,seq_len,batch_size,recalls,mrrs,combination_modality,n_user_histories,n_sessions_per_user_history
+GRU4Rec_bestparams_cuda.pt,ex2vec_baseline__BS512LR5e-05L_DIM64N_EP100_Epoch99_f10.6196.pt,50,50,"Recall@1=0.2433,Recall@5=0.453","MRR@1=0.123,MRR@5=0.431",pure_ex2vec,10,10
+GRU4Rec_bestparams_cuda.pt,ex2vec_baseline__BS512LR5e-05L_DIM64N_EP100_Epoch99_f10.6196.pt,50,50,"Recall@1=0.2433,Recall@5=0.453","MRR@1=0.123,MRR@5=0.431",sum,10,10
+GRU4Rec_bestparams_cuda.pt,ex2vec_baseline__BS512LR5e-05L_DIM64N_EP100_Epoch99_f10.6196.pt,50,50,"Recall@1=0.2433,Recall@5=0.453","MRR@1=0.123,MRR@5=0.431",multiply,10,10
+GRU4Rec_bestparams_cuda.pt,ex2vec_baseline__BS512LR5e-05L_DIM64N_EP100_Epoch99_f10.6196.pt,50,50,"Recall@1=0.2433,Recall@5=0.453","MRR@1=0.123,MRR@5=0.431",multiply,10,10
