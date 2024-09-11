@@ -60,7 +60,7 @@ config = {
     "latent_dim": L_DIM,
     "num_negative": 0,
     "l2_regularization": L2_REG,
-    "use_cuda": True,
+    "use_cuda": False,
     "device_id": 0,
     "pretrain": False,
     "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",
@@ -82,23 +82,23 @@ eval_data = data_sampler.evaluate_data(args.use_dataset)
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])
 
-best_f1 = -torch.inf
+#best_f1 = -torch.inf
 for epoch in range(config["num_epoch"]): # loop over epochs in config
     print("Epoch {} starts...".format(epoch))
     engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path) # train 1 epoch
     acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path) # calculate metrics
 
-    curr_metric = f1
+    #curr_metric = f1
 
     if args.tuning == "N":
-        engine.save(config["alias"], epoch, curr_metric) # save model chkpt
-    if curr_metric > best_f1:
-         best_f1 = curr_metric
+        engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}") # save model chkpt
+    #if curr_metric > best_f1:
+         #best_f1 = curr_metric
 
 
 # logging all metrics + primary metric at the end of training run
 all_metrics_str = f"FINAL METRICS: ACC: {acc}, RECALL: {recall}, F1: {f1}, BACC: {bacc}"
 print(all_metrics_str)
 
-res_str = f"PRIMARY METRIC: {best_f1}"
+res_str = f"PRIMARY METRIC: {f1}"
 print(res_str)

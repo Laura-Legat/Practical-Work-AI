@@ -3,6 +3,8 @@ from tensorboardX import SummaryWriter # for logging training information
 from tqdm import tqdm # for displaying progress bars during training
 from metrics import EvalMetrics # import accuracy, recall and F1
 from utils import save_checkpoint, use_optimizer
+import pandas as pd
+import os
 
 
 class Engine(object):
@@ -112,12 +114,28 @@ class Engine(object):
             )
             return accuracy, recall, f1, bacc
 
-    def save(self, alias, epoch_id: int, f1):
+    def save(self, alias, epoch_id: int, f1, param_str: str, metric_str: str):
         if epoch_id == self.config["num_epoch"]-1: # save result of last epoch as trained model
           model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
-          print('Saving final model to ', model_dir)
+          print('Saving final model to: ', model_dir)
           save_checkpoint(self.model, model_dir)
-          print('Model saved')
+
+          # write model data (alias, params, metrics) to table
+          new_row = {
+              'model_name': [alias],
+              'params': [param_str],
+              'results': [metric_str]
+          }
+
+          new_row_df = pd.DataFrame(new_row)
+          log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables'
+          
+          if os.path.exists(log_path): # append contents without header
+              new_row_df.to_csv(log_path, mode='a', header=False, index=False)
+          else: # create header and then append contents
+              new_row_df.to_csv(log_path, mode='w', header=True, index=False)
+
+          print('Final model saved.')
         else:
             if (epoch_id + 1) % 10 == 0: # save model at every 10th epoch - change this to 10
                 print('Saving model at epoch ', (epoch_id+1))
