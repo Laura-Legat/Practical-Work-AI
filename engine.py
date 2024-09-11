@@ -128,7 +128,7 @@ class Engine(object):
           }
 
           new_row_df = pd.DataFrame(new_row)
-          log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables'
+          log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/best_models.csv'
           
           if os.path.exists(log_path): # append contents without header
               new_row_df.to_csv(log_path, mode='a', header=False, index=False)
