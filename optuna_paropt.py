@@ -273,6 +273,10 @@ if os.path.exists(temp_path) and os.path.getsize(temp_path) >0:
     metrics_temp_df = pd.read_csv(temp_path)
     metrics_temp_df['search_space_id'] = search_space_id # add the used search space to the current trial
 
+    if args.embds_path != '': # add col to log from which gru4rec model the item embeddings were extracted
+        model_name = os.path.basename(args.embds_path).split('.')[0] # get model name without file extension
+        metrics_temp_df['gru_item_embds_model'] = model_name
+
 # merge new column data to trial information where number col = trial_id col, keeping all rows from trials_df_copy and adding additional info from metrics_temp_df
 trials_df_copy = trials_df_copy.merge(metrics_temp_df, left_on='number', right_on='trial_id', how='left')
 trials_df_copy = trials_df_copy.drop(columns=['trial_id']) # drop redundant trial info
@@ -282,9 +286,14 @@ if os.path.exists(optuna_vis_csv_path):
 
     # combine new ald old columns into the same columns
     if args.model == 'ex2vec':
-      for col in ['acc', 'recall', 'f1', 'bacc', 'search_space_id']:
-          trials_df_copy[col] = trials_df_copy[f'{col}_x'].combine_first(trials_df_copy[f'{col}_y'])
-          trials_df_copy.drop(columns=[f'{col}_x', f'{col}_y'], inplace=True)
+      if args.embds_path == '':
+          for col in ['acc', 'recall', 'f1', 'bacc', 'search_space_id']:
+              trials_df_copy[col] = trials_df_copy[f'{col}_x'].combine_first(trials_df_copy[f'{col}_y'])
+              trials_df_copy.drop(columns=[f'{col}_x', f'{col}_y'], inplace=True)
+      else:
+          for col in ['acc', 'recall', 'f1', 'bacc', 'search_space_id', 'gru_item_embds_model']:
+              trials_df_copy[col] = trials_df_copy[f'{col}_x'].combine_first(trials_df_copy[f'{col}_y'])
+              trials_df_copy.drop(columns=[f'{col}_x', f'{col}_y'], inplace=True)
     elif args.model == 'gru4rec':
       cols = []
       col_patterns = [r'Recall@', r'MRR@', r'search_space_id'] # define match patterns since we can have different cutoffs 
@@ -298,9 +307,6 @@ if os.path.exists(optuna_vis_csv_path):
             trials_df_copy[base_col] = trials_df_copy[f'{base_col}_x'].combine_first(trials_df_copy[f'{base_col}_y'])
             trials_df_copy.drop(columns=[f'{base_col}_x', f'{base_col}_y'], inplace=True)
     
-    if args.embds_path != '': # add col to log from which gru4rec model the item embeddings were extracted
-        model_name = os.path.basename(args.embds_path).split('.')[0] # get model name without file extension
-        trials_df_copy['gru_item_embds_model'] = model_name
 
 # save updates trial info csv
 trials_df_copy.to_csv(args.optuna_vis_csv)

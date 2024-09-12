@@ -91,7 +91,7 @@ for epoch in range(config["num_epoch"]): # loop over epochs in config
     #curr_metric = f1
 
     if args.tuning == "N":
-        engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}") # save model chkpt
+        engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}", args.embds_path) # save model chkpt
     #if curr_metric > best_f1:
          #best_f1 = curr_metric
 

@@ -114,7 +114,7 @@ class Engine(object):
             )
             return accuracy, recall, f1, bacc
 
-    def save(self, alias, epoch_id: int, f1, param_str: str, metric_str: str):
+    def save(self, alias, epoch_id: int, f1, param_str: str, metric_str: str, embds_path):
         if epoch_id == self.config["num_epoch"]-1: # save result of last epoch as trained model
           model_dir = self.config["model_dir"].format(alias, epoch_id, f1)
           print('Saving final model to: ', model_dir)
@@ -123,6 +123,7 @@ class Engine(object):
           # write model data (alias, params, metrics) to table
           new_row = {
               'model_name': [alias],
+              'item_embds': [os.path.basename(embds_path).split('.')[0]] if embds_path != '' else ['ex2vec'],
               'params': [param_str],
               'results': [metric_str]
           }
