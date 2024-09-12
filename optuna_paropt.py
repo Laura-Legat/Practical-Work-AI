@@ -217,8 +217,10 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
 # define file where to log search space
 if args.model == 'gru4rec':
     par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/gru4rec_search_space.csv'
-elif args.model == 'ex2vec':
+elif args.model == 'ex2vec' and args.embds_path == '':
     par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_search_space.csv'
+elif args.model == 'ex2vec' and args.embds_path != '':
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_gruembds_search_space.csv'
 
 # log currently used search space
 with open(par_space_log_path, 'r') as file:
@@ -289,18 +291,16 @@ if os.path.exists(optuna_vis_csv_path):
       for pattern in col_patterns:
         cols.extend([col for col in trials_df_copy.columns if re.search(pattern, col)]) # match all columns which contain recall or mrr scores for varying cutoffs
 
-      print(cols)
-
       for col in cols:
           # transform to base cols
           if col.endswith('_x'):
-            base_col = col[:-2]
-            #print(trials_df_copy)
-            #print(trials_df_copy[f'{base_col}_x'])
-            #print(trials_df_copy[f'{base_col}_y'])
+            base_col = col[:-2] # remove the _x from the string to get base col name
             trials_df_copy[base_col] = trials_df_copy[f'{base_col}_x'].combine_first(trials_df_copy[f'{base_col}_y'])
             trials_df_copy.drop(columns=[f'{base_col}_x', f'{base_col}_y'], inplace=True)
-
+    
+    if args.embds_path != '': # add col to log from which gru4rec model the item embeddings were extracted
+        model_name = os.path.basename(args.embds_path).split('.')[0] # get model name without file extension
+        trials_df_copy['gru_item_embds_model'] = model_name
 
 # save updates trial info csv
 trials_df_copy.to_csv(args.optuna_vis_csv)
