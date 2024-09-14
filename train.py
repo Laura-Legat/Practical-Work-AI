@@ -60,7 +60,7 @@ config = {
     "latent_dim": L_DIM,
     "num_negative": 0,
     "l2_regularization": L2_REG,
-    "use_cuda": False,
+    "use_cuda": True,
     "device_id": 0,
     "pretrain": False,
     "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",

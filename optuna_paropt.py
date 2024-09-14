@@ -179,7 +179,6 @@ def objective(trial, par_space):
             'trial_id': trial.number
           }
           trial_id_df = pd.DataFrame([log_dict])
-          print(trial_id_df)
 
           # Initialize an empty dictionary to hold all metrics
           all_metrics_combined = {}

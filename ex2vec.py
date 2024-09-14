@@ -139,7 +139,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
     def load_GRU4Rec_weights(self, GRU4RecModel_path):
         # sets up pre-trained item embeddings as part of Ex2Vec pipeline
-        model_loaded = torch.load(GRU4RecModel_path) # load GRU4Rec model from state dict
+        model_loaded = torch.load(GRU4RecModel_path, weights_only=False) # load GRU4Rec model from state dict
         item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
         return item_embeds
 
@@ -152,9 +152,6 @@ class Ex2VecEngine(Engine):
             use_cuda(True, config["device_id"])
             self.model.cuda()
         super(Ex2VecEngine, self).__init__(config) # initialize model
-        print(self.model)
-        for name, param in self.model.named_parameters():
-            print(name, type(param.data), param.size()) # print model params
 
         if config["pretrain"]:
             self.model.load_pretrain_weights() # switch to pre-train mode
