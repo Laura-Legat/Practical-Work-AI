@@ -5,7 +5,6 @@ TODOS.txt
 __pycache__
 explanations/
 chckpts/
-data_sm/
 optim/optuna_study_gru4rec.db
 optim/optuna_study_ex2vec.db
 optim/optuna_study_gru4rec.pkl
