@@ -12,3 +12,4 @@ optim/optuna_study_ex2vec.pkl
 combined_train.py
 ideas.txt
 trialdumps/
+.ipynb_checkpoints/
