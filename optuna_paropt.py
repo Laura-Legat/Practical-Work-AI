@@ -216,11 +216,11 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
 # SEARCH SPACE LOGGING
 # define file where to log search space
 if args.model == 'gru4rec':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/gru4rec_search_space.csv'
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/gru4rec_search_space.csv'
 elif args.model == 'ex2vec' and args.embds_path == '':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_search_space.csv'
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/ex2vec_search_space.csv'
 elif args.model == 'ex2vec' and args.embds_path != '':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/tables/ex2vec_gruembds_search_space.csv'
+    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/ex2vec_gruembds_search_space.csv'
 
 # log currently used search space
 with open(par_space_log_path, 'r') as file:
