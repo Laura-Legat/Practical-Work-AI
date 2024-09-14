@@ -1,11 +1,11 @@
 {
-    "n_trials": 1,
+    "n_trials": 2,
     "best_params": {
-        "num_epoch": 50,
-        "batch_size": 256,
-        "learning_rate": 0.0003269228583924228,
-        "rmsprop_alpha": 0.8,
-        "momentum": 0.4,
-        "l2_regularization": 3.31243479017209e-05
+        "num_epoch": 30,
+        "batch_size": 512,
+        "learning_rate": 0.0003208416119525183,
+        "rmsprop_alpha": 0.6000000000000001,
+        "momentum": 0.8,
+        "l2_regularization": 8.400584873492367e-05
     }
 }

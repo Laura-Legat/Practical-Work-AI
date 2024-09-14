@@ -1,4 +1,0 @@
-model_name,item_embeddings_which_model,metrics_string
-ex2vec_baseline__BS512LR5e-05L_DIM64N_EP100_Epoch99_f10.6196.pt,GRU4Rec_best_params_cuda.pt,"ACC = 0.6333, B_ACC = 0.647, RECALL = 0.6733, F1 = 0.6312"
-ex2vec_baseline__BS512LR5e-05L_DIM64N_EP50_Epoch99_f10.6196.pt,GRU4Rec_best_params_cuda.pt,"ACC = 0.6474, B_ACC = 0.6464, RECALL = 0.6733, F1 = 0.6472"
-ex2vec_baseline__BS1024LR5e-05L_DIM64N_EP30_Epoch99_f10.6196.pt,GRU4Rec_best_params_cuda.pt,"ACC = 0.64, B_ACC = 0.684, RECALL = 0.6733, F1 = 0.72"

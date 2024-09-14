@@ -138,7 +138,7 @@ class Engine(object):
 
           print('Final model saved.')
         else:
-            if (epoch_id + 1) % 10 == 0: # save model at every 10th epoch - change this to 10
+            if (epoch_id + 1) % 10 == 0: # save model at every 10th epoch
                 print('Saving model at epoch ', (epoch_id+1))
                 chckpt_dir = self.config["chckpt_dir"].format(alias, epoch_id, f1)
                 print('Saving model to ', chckpt_dir)

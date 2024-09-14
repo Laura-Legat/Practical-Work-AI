@@ -29,7 +29,7 @@ parser.add_argument('-sn', '--study_name', type=str, help='Unique study name to 
 
 #Ex2Vec specific args
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
-
+parser.add_argument('-a', '--alias', type=str, default='ex2vec_tuning', help='The alias of the model. Used primarily for tensorboard logging.')
 
 #GRU4Rec specific args
 parser.add_argument('path', metavar='PATH', type=str, help='Path to the training data (TAB separated file (.tsv or .txt) or pickled pandas.DataFrame object (.pickle)) (if the --load_model parameter is NOT provided) or to the serialized model (if the --load_model parameter is provided).')
@@ -90,7 +90,7 @@ def generate_command(optimized_param_str) -> str:
     if args.model == 'gru4rec':
         command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure)
     elif args.model == 'ex2vec':
-        command = 'python "{}" -ep "{}" -ps {} -t {} -n {}'.format(args.prog_path, args.embds_path, optimized_param_str, "Y", 'ex2vec_tuning')
+        command = 'python "{}" -ep "{}" -ps {} -t {} -n {}'.format(args.prog_path, args.embds_path, optimized_param_str, "Y", args.alias)
     return command
 
 def train_and_eval(optimized_param_str):
