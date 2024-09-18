@@ -1,0 +1,20 @@
+{
+    "n_trials": 1,
+    "best_params": {
+        "loss": "bpr-max",
+        "constrained_embedding": false,
+        "embedding": 64,
+        "elu_param": 1,
+        "layers": 64,
+        "n_epochs": 7,
+        "batch_size": 144,
+        "dropout_p_embed": 0.4,
+        "dropout_p_hidden": 0.45,
+        "learning_rate": 0.0241,
+        "momentum": 0.30000000000000004,
+        "n_sample": 256,
+        "sample_alpha": 0.9,
+        "bpreg": 1.1,
+        "logq": 0.30000000000000004
+    }
+}
