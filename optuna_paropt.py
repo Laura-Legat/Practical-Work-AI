@@ -26,6 +26,7 @@ parser.add_argument('-ovc', '--optuna_vis_csv', type=str, help='Path to store op
 parser.add_argument('-ovp', '--optuna_vis_pkl', type=str, help='Path to store optuna study object')
 parser.add_argument('-sp', '--storage_path', type=str, help='Path where to store Optuna study/where to resume it from.')
 parser.add_argument('-sn', '--study_name', type=str, help='Unique study name to be associated with current study.')
+parser.add_argument('-s', '--save_path', type=str, help='Path to save the model to (optional).')
 
 #Ex2Vec specific args
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
@@ -88,7 +89,7 @@ def generate_command(optimized_param_str) -> str:
     """
     command = ''
     if args.model == 'gru4rec':
-        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure)
+        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {} -s {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure, args.save_path)
     elif args.model == 'ex2vec':
         command = 'python "{}" -ep "{}" -ps {} -t {} -n {}'.format(args.prog_path, args.embds_path, optimized_param_str, "Y", args.alias)
     return command

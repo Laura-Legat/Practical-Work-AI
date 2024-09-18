@@ -61,7 +61,10 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
         if embds_path != '': # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
             all_item_embds = self.load_GRU4Rec_weights(embds_path)
+            all_item_embds.requires_grad_(False) # freeze gru4rec item embds
             item_embeddings = all_item_embds[item_indices]
+
+            item_embeddings
         else:
             item_embeddings = self.embedding_item(item_indices)
 
@@ -79,14 +82,11 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         mask = (r_interval > 0).float() #  indicator function = 1 when t - t_j > 0 = t > t_j, see paper p 973
         delta_t = r_interval * mask # t - t_j * indicator_func
 
-
         delta_t = delta_t + self.cutoff.clamp(min=0.1, max=100) # t - t_j * indicator_func + c
         decay = 0.5  # self.decay.clamp(min = 0.01, max = 10)
         pow_values = torch.pow(delta_t, -decay) * mask # indicator_func * (t-t_j + c)^-d -> why 2x mask?
         base_level = torch.sum(pow_values, -1) # whole sum from formula
         
-            
-
         # compute how much to move the user embedding
         # calculate lambda and clamp it to specific space
         lamb = self.global_lamb.clamp(0.01, 10) + self.user_lamb(user_indices).squeeze(-1).clamp(0.1, 10)
@@ -137,9 +137,17 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         self.alpha.data = ex2vec_pre.alpha.data
         self.global_lamb.data = ex2vec_pre.global_lamb.data
 
-    def load_GRU4Rec_weights(self, GRU4RecModel_path):
-        # sets up pre-trained item embeddings as part of Ex2Vec pipeline
-        model_loaded = torch.load(GRU4RecModel_path, weights_only=False) # load GRU4Rec model from state dict
+    def load_GRU4Rec_weights(self, GRU4Rec_path:str):
+        """
+        Sets up extracted item embeddings from pre-trained GRU4Rec as part of Ex2Vec pipeline.
+
+        Args:
+        GRU4Rec_path: The file path where the pre-trained GRU4Rec model resides
+
+        Returns:
+        item_embeds: Pre-trained item embeddings
+        """
+        model_loaded = torch.load(GRU4Rec_path, weights_only=False) # load GRU4Rec model from state dict
         item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
         return item_embeds
 
