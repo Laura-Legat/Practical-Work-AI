@@ -25,7 +25,7 @@ def get_delta_t(row):
     ts = row["timestamp"]
     activations = row["activations"]
     act = np.array(activations)
-    act = act[act != 99] # removes timestamps of songs whioch were not listened to over 80%
+    act = act[act != 99] # removes timestamps of songs which were not listened to over 80%
     act = ts - act # for each timestamp, calculate timestamp_i - timestamp_j
     return act
 
@@ -42,7 +42,7 @@ df = df.sort_values(by="timestamp", ascending=True)
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
     # sample random 1000 unique userIDs
-    selected_user_ids = np.random.choice(df['userId'], size=200)
+    selected_user_ids = np.random.choice(df['userId'], size=50)
     df_sm = df[df['userId'].isin(selected_user_ids)]
 
     # create ID -> index maps to avoid embedding errors
@@ -119,7 +119,7 @@ final_df = (
 
 # save full split-up dataset as processed.csv
 final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].to_csv(
-    DATA_PATH + 'processed_SM.csv', index=False
+    DATA_PATH + 'processed.csv', index=False
 )
 
 print('Saved processed.csv')
@@ -208,8 +208,8 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
 train_df_seq, val_df_seq, test_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
 
 # filtering out irrelevant columns and saving as separate csv files for GRU4Rec
-train_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_train_SM.csv', index=False)
-val_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_val_SM.csv', index=False)
-test_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_test_SM.csv', index=False)
+train_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
+val_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
+test_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
 
 print('Saved sequenced files for GRU4Rec')

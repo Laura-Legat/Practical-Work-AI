@@ -28,7 +28,7 @@ class Engine(object):
                 interest.cuda(),
             )
         self.opt.zero_grad() # clear grads of tensors 
-        rating_pred = self.model(users, items, rel_int, embds_path=embds_path) # forward pass to get interest
+        rating_pred, _ = self.model(users, items, rel_int, embds_path=embds_path) # forward pass to get interest
         loss = self.crit(rating_pred.view(-1), interest) # compare predicted with actual interest values
 
         loss.backward() # grad backprop
@@ -78,12 +78,12 @@ class Engine(object):
                 test_items = test_items.cuda()
                 test_rel_int = test_rel_int.cuda()
                 test_y = test_y.cuda()
-            print(test_users.size())
-            print(test_items.size())
-            print(test_rel_int.size())
-            print(embds_path)
-            print(test_rel_int)
-            test_scores = self.model(test_users, test_items, test_rel_int, embds_path) #forward pass with test set to get interest scores
+            #print(test_users.size())
+            #print(test_items.size())
+            #print(test_rel_int.size())
+            #print(embds_path)
+            #print(test_rel_int)
+            test_scores, distance = self.model(test_users, test_items, test_rel_int, embds_path) #forward pass with test set to get interest scores
 
             if self.config["use_cuda"] is False: # move to cpu if cuda not available
                 test_users = test_users.cpu()

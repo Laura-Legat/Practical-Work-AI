@@ -60,11 +60,13 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         user_embeddings = self.embedding_user(user_indices)
 
         if embds_path != '': # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
-            all_item_embds = self.load_GRU4Rec_weights(embds_path)
-            all_item_embds.requires_grad_(False) # freeze gru4rec item embds
-            item_embeddings = all_item_embds[item_indices]
+            itemidmap, all_item_embds = self.load_GRU4Rec_weights(embds_path)
+            item_indices_list = item_indices.clone().tolist()
 
-            item_embeddings
+            item_indices_gru = itemidmap[item_indices_list].tolist()
+
+            all_item_embds.requires_grad_(False) # freeze gru4rec item embds
+            item_embeddings = all_item_embds[item_indices_gru]
         else:
             item_embeddings = self.embedding_item(item_indices)
 
@@ -108,7 +110,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 
         # output the interest value between 0 and 1
         interest = self.logistic(I)
-        return interest
+        return interest, distance
 
     def load_pretrain_weights(self):
         """Loading weights from trained GMF model"""
@@ -145,11 +147,12 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         GRU4Rec_path: The file path where the pre-trained GRU4Rec model resides
 
         Returns:
+        itemidmap: The itemId-itemIdx mapping used by GRU4Rec
         item_embeds: Pre-trained item embeddings
         """
         model_loaded = torch.load(GRU4Rec_path, weights_only=False) # load GRU4Rec model from state dict
         item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
-        return item_embeds
+        return model_loaded.data_iterator.itemidmap, item_embeds
 
 class Ex2VecEngine(Engine):
     """Engine for training & evaluating MEE model"""
