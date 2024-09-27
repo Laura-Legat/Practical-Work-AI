@@ -39,23 +39,6 @@ orig_dataset = DATA_PATH + 'new_release_stream.csv'
 df = pd.read_csv(orig_dataset, index_col=False)
 df = df.sort_values(by="timestamp", ascending=True)
 
-# generate a smaller version of the preprocessed dataset for testing purposes
-if args.small_version == 'Y':
-    # sample random 1000 unique userIDs
-    selected_user_ids = np.random.choice(df['userId'], size=50)
-    df_sm = df[df['userId'].isin(selected_user_ids)]
-
-    # create ID -> index maps to avoid embedding errors
-    user_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['userId'].unique())}
-    item_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['itemId'].unique())}
-
-    df_sm.loc[:,'userId'] = df_sm['userId'].map(user_mapping)
-    df_sm.loc[:, 'itemId'] = df_sm['itemId'].map(item_mapping)
-
-    # resort new dataframe
-    df_sm = df_sm.sort_values(by='timestamp', ascending=True)
-    df = df_sm # replace old, full dataset
-
 # collect each user's listening history
 df["activations"] = df["timestamp"] # create new column "activations" and set to the timestamps
 df.loc[df.y == 0, "activations"] = 99  # if the item was not consumed over 80%, the timestamp does not enter the history (activation column is set to 99 in that row)
@@ -86,6 +69,23 @@ filtered_df = df[df['userId'].isin(valid_user_ids)]
 item_interaction_cnt = filtered_df.groupby('itemId').size()
 valid_idem_ids = item_interaction_cnt[item_interaction_cnt >= FILTERING_THRESHOLD].index
 filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
+
+# generate a smaller version of the preprocessed dataset for testing purposes
+if args.small_version == 'Y':
+    # sample random 1000 unique userIDs
+    selected_user_ids = np.random.choice(filtered_df['userId'], size=5)
+    df_sm = filtered_df[filtered_df['userId'].isin(selected_user_ids)]
+
+    # create ID -> index maps to avoid embedding errors
+    user_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['userId'].unique())}
+    item_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['itemId'].unique())}
+
+    df_sm.loc[:,'userId'] = df_sm['userId'].map(user_mapping)
+    df_sm.loc[:, 'itemId'] = df_sm['itemId'].map(item_mapping)
+
+    # resort new dataframe
+    df_sm = df_sm.sort_values(by='timestamp', ascending=True)
+    filtered_df = df_sm # replace old, full dataset
 
 # SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
