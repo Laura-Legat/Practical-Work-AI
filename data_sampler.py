@@ -38,9 +38,22 @@ orig_data = DATA_PATH + 'processed.csv'
 # read processed.csv into pandas dataframe while converting  relational_interval from string to python list bc some are saved as strings
 df = pd.read_csv(orig_data, converters={"relational_interval": literal_eval})
 
-# determines unique users and items in dataset
-user_pool = set(df["userId"].unique())
-item_pool = set(df["itemId"].unique())
+# array of unique users and items 
+unique_users = df["userId"].unique()
+unique_items = df["itemId"].unique()
+
+# total amount of unique users and items
+n_users = len(unique_users)
+n_items = len(unique_items)
+
+# determines mapping for users and items to avoid embedding errors since ID can have higher numbers than there are unique ID's
+#e.g. maps user/item ID's 45, 3, 29 -> 0, 1, 2
+user_mapping = pd.Series(data=np.arange(n_users, dtype='int32'), index=unique_users, name='userIdx')
+item_mapping = pd.Series(data=np.arange(n_items, dtype='int32'), index=unique_items, name='itemIdx')
+
+# apply mapping to dataset
+df['userId'] = df['userId'].map(user_mapping)
+df['itemId'] = df['itemId'].map(item_mapping)
 
 # split dataset into train, test and val based 
 df_test = df[df["set"] == "test"].copy()
@@ -58,8 +71,31 @@ df_combined.sort_values(by='timestamp')
 rel_int_dict = {}
 for row in df_combined.itertuples():
     # create new key for each unique user-item combination
-    key = (row.userId, row.itemId)
-    rel_int_dict[key] = row.relational_interval
+    rel_int_dict[(row.userId, row.itemId)] = row.relational_interval
+
+def get_mappings():
+    """
+    Helper function which returns the userId->userIdx and itemId->itemIdx mappings.
+    """
+    return user_mapping, item_mapping
+
+def get_userId_from_mapping(idx_list):
+  """
+  Helpfer funtion which returns the corresponding userId to a userIdx.
+
+  Args:
+      idx_list: List of ints of userIdxs that one wants to convert
+  """
+  return user_mapping.index[idx_list]
+
+def get_itemId_from_mapping(idx_list):
+  """
+  Helpfer funtion which returns the corresponding userId to a userIdx.
+
+  Args:
+      idx_list: List of ints of userIdxs that one wants to convert
+  """
+  return item_mapping.index[idx_list]
 
 def get_rel_int_dict():
     """
@@ -75,8 +111,8 @@ def update_rel_int_dict(userid, itemid, relational_interval):
     rel_int_dict[key] = relational_interval
 
 # function that returns the train, val and test set
-def get_train_test_val():
-    return df_test, df_train, df_val
+def get_train_test_val_comb():
+    return df_test, df_train, df_val, df_combined
 
 # function that returns the number of users and items
 def get_n_users_items():
@@ -97,7 +133,6 @@ def instance_a_train_loader(batch_size, dataset_mode=0):
         train_stream = (
             df_train.copy()
         )  # merge(df_negative[["userId", "negative_items"]], on="userId")
-
     for row in train_stream.itertuples(): # loop over each df row as itertuples, aka named tuples, for readability
         # values are extracted from csv and appended to respective lists
         users.append(int(row.userId))

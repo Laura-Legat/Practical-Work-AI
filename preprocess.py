@@ -76,13 +76,6 @@ if args.small_version == 'Y':
     selected_user_ids = np.random.choice(filtered_df['userId'], size=5)
     df_sm = filtered_df[filtered_df['userId'].isin(selected_user_ids)]
 
-    # create ID -> index maps to avoid embedding errors
-    user_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['userId'].unique())}
-    item_mapping = {original_id: new_id for new_id, original_id in enumerate(df_sm['itemId'].unique())}
-
-    df_sm.loc[:,'userId'] = df_sm['userId'].map(user_mapping)
-    df_sm.loc[:, 'itemId'] = df_sm['itemId'].map(item_mapping)
-
     # resort new dataframe
     df_sm = df_sm.sort_values(by='timestamp', ascending=True)
     filtered_df = df_sm # replace old, full dataset
@@ -169,7 +162,7 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
     """
     whole_df['SessionId'] = '' # initialize sessionid col
     whole_df['tempSessionId'] = None
-    train_seqs, val_seqs, test_seqs = [], [], []
+    train_seqs, val_seqs, test_seqs, combined_seqs = [], [], [], []
 
     # group whole training set per user
     for user_id, user_df in whole_df.groupby('userId'):
@@ -185,6 +178,7 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
 
         train_seqs_partial, seq_id = generate_window(last_start_idx, train_df, user_id, seq_id, seq_length, stride)
         train_seqs.extend(train_seqs_partial)
+        combined_seqs.extend(train_seqs_partial) # create combined seq = train + val for final model training
 
         # get last SEQ_LEN-1 items from training set and concat for validation set
         combined_val_df = pd.concat([train_df.iloc[-seq_length+1:], val_df])
@@ -192,6 +186,7 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
 
         val_seqs_partial, seq_id = generate_window(last_start_idx, combined_val_df, user_id, seq_id, seq_length, stride)
         val_seqs.extend(val_seqs_partial)
+        combined_seqs.extend(val_seqs_partial)
 
         combined_test_df = pd.concat([val_df.iloc[-seq_length+1:], test_df])
         if len(val_df.iloc[-seq_length+1:]) + 1 < seq_length: # check if there are too little validation set items and we need to thus add training items
@@ -202,14 +197,16 @@ def split_into_seqs(whole_df, seq_length, stride) -> tuple[pd.DataFrame, pd.Data
         test_seqs_partial, seq_id = generate_window(last_start_idx, combined_test_df, user_id, seq_id, seq_length, stride)
         test_seqs.extend(test_seqs_partial)
 
-    return pd.concat(train_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(val_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(test_seqs).sort_values(by=['userId', 'tempSessionId'])
+    return pd.concat(train_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(val_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(test_seqs).sort_values(by=['userId', 'tempSessionId']), pd.concat(combined_seqs).sort_values(by=['userId', 'tempSessionId'])
 
 # split dataset into sequences
-train_df_seq, val_df_seq, test_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
+train_df_seq, val_df_seq, test_df_seq, combined_df_seq = split_into_seqs(final_df, SEQ_LEN, STRIDE)
 
 # filtering out irrelevant columns and saving as separate csv files for GRU4Rec
 train_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_train.csv', index=False)
 val_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_val.csv', index=False)
 test_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_test.csv', index=False)
+combined_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_combined.csv', index=False)
+
 
 print('Saved sequenced files for GRU4Rec')

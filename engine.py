@@ -78,11 +78,6 @@ class Engine(object):
                 test_items = test_items.cuda()
                 test_rel_int = test_rel_int.cuda()
                 test_y = test_y.cuda()
-            #print(test_users.size())
-            #print(test_items.size())
-            #print(test_rel_int.size())
-            #print(embds_path)
-            #print(test_rel_int)
             test_scores, distance = self.model(test_users, test_items, test_rel_int, embds_path) #forward pass with test set to get interest scores
 
             if self.config["use_cuda"] is False: # move to cpu if cuda not available

@@ -4,6 +4,7 @@ import torch
 
 from engine import Engine
 from utils import resume_checkpoint, use_cuda
+from data_sampler import get_userId_from_mapping, get_itemId_from_mapping
 
 
 # Ex2Vec Class
@@ -60,13 +61,10 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         user_embeddings = self.embedding_user(user_indices)
 
         if embds_path != '': # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
-            itemidmap, all_item_embds = self.load_GRU4Rec_weights(embds_path)
-            item_indices_list = item_indices.clone().tolist()
-
-            item_indices_gru = itemidmap[item_indices_list].tolist()
+            all_item_embds = self.load_GRU4Rec_weights(embds_path) # load item mapping and item embeddings 
 
             all_item_embds.requires_grad_(False) # freeze gru4rec item embds
-            item_embeddings = all_item_embds[item_indices_gru]
+            item_embeddings = all_item_embds[item_indices]
         else:
             item_embeddings = self.embedding_item(item_indices)
 
@@ -104,7 +102,6 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         # d(u,v) - activation
         distance = base_distance - activation  # self.lamb*distance*base_level -> why not distance = activation?
         
-        
         # formula 2 from paper: alpha * d_u,i + beta * d_u,i^2 + gamma + bias
         I = self.alpha * distance  + self.beta * torch.pow(distance, 2) + self.gamma + u_bias + i_bias
 
@@ -120,12 +117,6 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         if config["use_cuda"] is True:
             ex2vec_pre.cuda() # move model to GPU
             ex2vec_pre.load_state_dict(torch.load(config['pretrain_dir']))
-
-            #resume_checkpoint(
-            #    ex2vec_pre,
-            #    model_dir=config["pretrain_dir"],
-            #    device_id=config["device_id"],
-            #) # load pre-trained state dict into model 
 
         # copy state dict of pretrained ex2vec model to currently initiated ex2vec model
         self.embedding_user.weight.data = ex2vec_pre.embedding_user.weight.data
@@ -147,12 +138,11 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         GRU4Rec_path: The file path where the pre-trained GRU4Rec model resides
 
         Returns:
-        itemidmap: The itemId-itemIdx mapping used by GRU4Rec
-        item_embeds: Pre-trained item embeddings
+        item_embeds: Pre-trained item embeddings -> Tensor
         """
         model_loaded = torch.load(GRU4Rec_path, weights_only=False) # load GRU4Rec model from state dict
         item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
-        return model_loaded.data_iterator.itemidmap, item_embeds
+        return item_embeds
 
 class Ex2VecEngine(Engine):
     """Engine for training & evaluating MEE model"""
