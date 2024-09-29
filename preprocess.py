@@ -73,7 +73,7 @@ filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
     # sample random 1000 unique userIDs
-    selected_user_ids = np.random.choice(filtered_df['userId'], size=5)
+    selected_user_ids = np.random.choice(filtered_df['userId'], size=500)
     df_sm = filtered_df[filtered_df['userId'].isin(selected_user_ids)]
 
     # resort new dataframe
