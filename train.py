@@ -5,12 +5,11 @@ from ex2vec import Ex2VecEngine
 import os
 import shutil
 import torch
-import sys
-sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_Fork')
-import gru4rec_pytorch
+from GRU4Rec_Fork import gru4rec_pytorch
 import json
 import optuna
 from collections import OrderedDict
+from utils import convert_to_param_str
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):
@@ -19,7 +18,8 @@ class MyHelpFormatter(argparse.HelpFormatter):
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Train an Ex2Vec model.')
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the GRU4Rec trained model')
-parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize')
+parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize, or to train with.')
+parser.add_argument('-pf', '--param_file', type=str, default=None, help='File where the parameters are stored.')
 parser.add_argument('-t', '--tuning', type=str, default="N", help='Set whether this is a run with or without hyperparameter tuning.')
 parser.add_argument('-n', '--name', type=str, default='ex2vec', help='Set the alias for the model.')
 parser.add_argument('-ud', '--use_dataset', type=int, default=0, help='Which set to use for validation for the current run. Modes: 0 = Validation, 1 = Test, 2 = Custom (Default = 0).')
@@ -29,6 +29,9 @@ args = parser.parse_args() # store command line args into args variable
 ex2vec_params = None
 if args.param_str: # if parameter string is provided, parse it and create an ordered dict of params
     ex2vec_params = OrderedDict([x.split('=') for x in args.param_str.split(',') if "=" in x]) # splits e.g. "loss=bpr" to {"loss":"bpr"}
+elif args.param_file:
+    param_str = convert_to_param_str(args.param_file)
+    ex2vec_params = OrderedDict([x.split('=') for x in param_str.split(',') if "=" in x])
 
 n_user, n_item = data_sampler.get_n_users_items() # get number of unique users and number of unique items
 

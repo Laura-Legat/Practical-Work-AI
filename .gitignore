@@ -1,4 +1,6 @@
 __pycache__
+build/
+chckpts/
 data/processed.csv
 data/seq_train.csv
 data/seq_val.csv
@@ -6,7 +8,7 @@ data/seq_test.csv
 data/seq_combined.csv
 data/ORIG_1000/
 data/.ipynb_checkpoints/
-chckpts/
+dist/
 explanations/
 models/
 runs/
@@ -16,3 +18,4 @@ ideas.txt
 TODOS.txt
 optim/*.db
 optim/*.pkl
+pr_ext.egg-info/

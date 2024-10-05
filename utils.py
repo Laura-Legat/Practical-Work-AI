@@ -2,6 +2,7 @@
 
 # import pytorch library - a tensor library for deep learning using GPUs and CPUs
 import torch
+import json
 
 
 # Checkpoints - save the model state dict to the specified directory "model_dir"
@@ -51,3 +52,21 @@ def use_optimizer(network, params):
             f'{params.get("optimizer", None)} is not allowed as optimizer value'
         )
     return optimizer
+
+
+# convert best parameters to parameter string
+def convert_to_param_str(best_param_path):
+  """
+  Helper function that converts parameters from a JSON file into a string used for training models.
+
+  Args:
+    best_param_path: The path of the JSON file containing parameters for model training.
+
+  Returns:
+    String of parameters of the form "param1=value1,param2=value2,..."
+  """
+  with open(best_param_path, 'r') as f:
+    data = json.load(f)
+
+  params = data['best_params'] # extract only the parameter part, not the optuna n_trials
+  return ','.join([f'{key}={value}' for key,value in params.items()])

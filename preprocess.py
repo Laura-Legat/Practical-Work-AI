@@ -1,5 +1,5 @@
 # CREATES PROCESSED.CSV OUT OF NEW_RELEASE_STREAM.CSV
-import argparse # lib for parsing command-line args
+import argparse
 import random
 import shutil
 import numpy as np
@@ -11,14 +11,14 @@ class MyHelpFormatter(argparse.HelpFormatter):
         self._width = shutil.get_terminal_size().columns
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Preprocessing for Ex2Vec and GRU4Rec models.')
-parser.add_argument('-sl', '--seq_len', type=str, default=50, help='Sequence length for data-splitting for GRU4Rec model. Default = 50.')
-parser.add_argument('-st', '--stride', type=str, default=1, help='Stride for overlap during data-splitting for GRU4Rec. Default = 1.')
+parser.add_argument('-sl', '--seq_len', type=int, default=50, help='Sequence length for data-splitting for GRU4Rec model. Default = 50.')
+parser.add_argument('-st', '--stride', type=int, default=1, help='Stride for overlap during data-splitting for GRU4Rec. Default = 1.')
 parser.add_argument('-sm', '--small_version', type=str, default="N", help='If a small version of the dataset should be used for ex2vec and GRU4Rec preprocessing. Type Y for yes, N for no. Default = N.')
+parser.add_argument('-u', '--n_users', type=int, default=500, help='The amount of randomly chosen users that corresponding user histories shoud be extracted from the dataset. Default = 500.')
+parser.add_argument('-p', '--data_path', type=str, default='./data/', help='The path where the unprocessed dataset lies. Default = ./data/')
 args = parser.parse_args() # store command line args into args variable
 
-
 print('Pre-processing dataset for Ex2Vec...')
-
 
 # function that computes delta_t, i.e., the time interval between consumptions (not considered when y = 0 )
 def get_delta_t(row):
@@ -29,9 +29,8 @@ def get_delta_t(row):
     act = ts - act # for each timestamp, calculate timestamp_i - timestamp_j
     return act
 
-
 # defines path for raw deezer dataset
-DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
+DATA_PATH = args.data_path
 
 orig_dataset = DATA_PATH + 'new_release_stream.csv'
 
@@ -73,7 +72,7 @@ filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
 # generate a smaller version of the preprocessed dataset for testing purposes
 if args.small_version == 'Y':
     # sample random 1000 unique userIDs
-    selected_user_ids = np.random.choice(filtered_df['userId'], size=500)
+    selected_user_ids = np.random.choice(filtered_df['userId'], size=args.n_users)
     df_sm = filtered_df[filtered_df['userId'].isin(selected_user_ids)]
 
     # resort new dataframe
@@ -82,7 +81,7 @@ if args.small_version == 'Y':
 
 # SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
-df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
+df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'), include_groups=False)
 
 # create structures for storing the rows belonging to the splits
 train_rows = []
@@ -115,7 +114,7 @@ final_df[["userId", "itemId", "timestamp", "y", "relational_interval", "set"]].t
     DATA_PATH + 'processed.csv', index=False
 )
 
-print('Saved processed.csv')
+print(f'Saved processed.csv to {args.data_path} folder.')
 print('Pre-processing dataset for GRU4Rec...')
 
 # PREPARE DATA FOR GRU4REC
@@ -209,4 +208,4 @@ test_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval'
 combined_df_seq[['userId', 'itemId', 'timestamp', 'SessionId', 'relational_interval']].to_csv(DATA_PATH + 'seq_combined.csv', index=False)
 
 
-print('Saved sequenced files for GRU4Rec')
+print(f'Saved sequential files for GRU4Rec to {args.data_path} folder.')
