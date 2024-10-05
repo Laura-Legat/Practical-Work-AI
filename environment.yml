@@ -17,3 +17,4 @@ dependencies:
   - pexpect=4.9.0
   - matplotlib=3.7.1
   - seaborn=0.13.1
+  - setuptools=71.0.4
