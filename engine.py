@@ -10,10 +10,10 @@ import os
 class Engine(object):
     """Meta Engine for Training and Evaluating the model"""
 
-    def __init__(self, config):
+    def __init__(self, config, ex2vec_path):
         self.config = config # storing current training config
         self._evaluate = EvalMetrics()
-        self._writer = SummaryWriter(log_dir="/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/runs/{}".format(config["alias"])) 
+        self._writer = SummaryWriter(log_dir=ex2vec_path + "runs/{}".format(config["alias"])) 
         self._writer.add_text("config", str(config), 0)
         self.opt = use_optimizer(self.model, config) # set up optimizer 
         self.crit = torch.nn.BCELoss() # defining loss function as Binary cross entropy, used for binary classification tasks
@@ -129,7 +129,7 @@ class Engine(object):
           }
 
           new_row_df = pd.DataFrame(new_row)
-          log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/best_models.csv'
+          log_path = self.config['results_dir']
           
           if os.path.exists(log_path): # append contents without header
               new_row_df.to_csv(log_path, mode='a', header=False, index=False)
@@ -143,4 +143,3 @@ class Engine(object):
                 chckpt_dir = self.config["chckpt_dir"].format(alias, epoch_id, f1)
                 print('Saving model to ', chckpt_dir)
                 save_checkpoint(self.model, chckpt_dir)
-

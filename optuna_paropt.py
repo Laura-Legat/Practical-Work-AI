@@ -19,7 +19,6 @@ class MyHelpFormatter(argparse.HelpFormatter):
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Perform hyperparameter optimization on a model.')
 parser.add_argument('-opf', '--optuna_parameter_file', metavar='PATH', type=str, help='Path to JSON file describing the parameter space for optuna.')
 parser.add_argument('-nt', '--ntrials', metavar='NT', type=int, nargs='?', default=50, help='Number of optimization trials to perform (Default: 50)')
-parser.add_argument('-p', '--prog_path', type=str, help='Python training script path.')
 parser.add_argument('-o', '--output_path', type=str, help='Path of file where to save best parameters of study.')
 parser.add_argument('-mo', '--model', type=str, default='ex2vec', help='The model on which to optimize (type ex2vec or gru4rec).')
 parser.add_argument('-ovc', '--optuna_vis_csv', type=str, help='Path to store optuna study dataframe')
@@ -27,10 +26,12 @@ parser.add_argument('-ovp', '--optuna_vis_pkl', type=str, help='Path to store op
 parser.add_argument('-sp', '--storage_path', type=str, help='Path where to store Optuna study/where to resume it from.')
 parser.add_argument('-sn', '--study_name', type=str, help='Unique study name to be associated with current study.')
 parser.add_argument('-s', '--save_path', type=str, help='Path to save the model to (optional).')
+parser.add_argument('-pth', '--base_path', type=str, default='./', help='The base directory where everything related to the PR (runs, chckpts, final models, results etc.) will be stored.')
 
 #Ex2Vec specific args
 parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the pretrained GRU4Rec trained')
 parser.add_argument('-a', '--alias', type=str, default='ex2vec_tuning', help='The alias of the model. Used primarily for tensorboard logging.')
+parser.add_argument('--use_cuda', action='store_true', help='Sets the flag for training Ex2Vec on the GPU')
 
 #GRU4Rec specific args
 parser.add_argument('path', metavar='PATH', type=str, help='Path to the training data (TAB separated file (.tsv or .txt) or pickled pandas.DataFrame object (.pickle)) (if the --load_model parameter is NOT provided) or to the serialized model (if the --load_model parameter is provided).')
@@ -89,9 +90,11 @@ def generate_command(optimized_param_str) -> str:
     """
     command = ''
     if args.model == 'gru4rec':
-        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {} -s {}'.format(args.prog_path, args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure, args.save_path)
+        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {} -s {}'.format(args.base_path + 'GRU4Rec_Fork/run.py', args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure, args.save_path)
     elif args.model == 'ex2vec':
-        command = 'python "{}" -ep "{}" -ps {} -t {} -n {}'.format(args.prog_path, args.embds_path, optimized_param_str, "Y", args.alias)
+        command = 'python "{}" -ep "{}" -ps {} -t {} -n {} -pth {}'.format(args.base_path + 'train.py', args.embds_path, optimized_param_str, "Y", args.alias, args.base_path)
+        if args.use_cuda is True:
+            command += ' --use_cuda'
     return command
 
 def train_and_eval(optimized_param_str):
@@ -197,7 +200,7 @@ def objective(trial, par_space):
           metrics_df = pd.concat([trial_id_df, metrics_df], axis=1)
     
     # save temporary metrics file as csv
-    temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.csv'
+    temp_path = args.base_path + 'temp_metrics.csv'
     metrics_df.to_csv(temp_path, mode='a', header=not os.path.exists(temp_path), index=False)
 
     return primary_metric # return metric to optimize study for
@@ -216,11 +219,11 @@ with open(args.optuna_parameter_file, 'rt') as f: # open json file containing pa
 # SEARCH SPACE LOGGING
 # define file where to log search space
 if args.model == 'gru4rec':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/gru4rec_search_space.csv'
+    par_space_log_path = args.base_path + 'results/gru4rec_search_space.csv'
 elif args.model == 'ex2vec' and args.embds_path == '':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/ex2vec_search_space.csv'
+    par_space_log_path = args.base_path + 'results/ex2vec_search_space.csv'
 elif args.model == 'ex2vec' and args.embds_path != '':
-    par_space_log_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/results/ex2vec_gruembds_search_space.csv'
+    par_space_log_path = args.base_path + 'results/ex2vec_gruembds_search_space.csv'
 
 # log currently used search space
 with open(par_space_log_path, 'r') as file:
@@ -268,7 +271,7 @@ if os.path.exists(optuna_vis_csv_path): # if ths trials csv already exists, aka 
     trials_df_copy = pd.concat([optuna_vis_csv, new_trials], ignore_index=True) # concatinate new rows to new trails df
 
 #read out temp file all metrics and based on trial number, assign the col values
-temp_path = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/temp_metrics.csv'
+temp_path = args.base_path + 'temp_metrics.csv'
 if os.path.exists(temp_path) and os.path.getsize(temp_path) >0:
     metrics_temp_df = pd.read_csv(temp_path)
     metrics_temp_df['search_space_id'] = search_space_id # add the used search space to the current trial

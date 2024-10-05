@@ -23,6 +23,11 @@ parser.add_argument('-pf', '--param_file', type=str, default=None, help='File wh
 parser.add_argument('-t', '--tuning', type=str, default="N", help='Set whether this is a run with or without hyperparameter tuning.')
 parser.add_argument('-n', '--name', type=str, default='ex2vec', help='Set the alias for the model.')
 parser.add_argument('-ud', '--use_dataset', type=int, default=0, help='Which set to use for validation for the current run. Modes: 0 = Validation, 1 = Test, 2 = Custom (Default = 0).')
+parser.add_argument('-pth', '--base_path', type=str, default='./', help='The base directory where everything related to the PR (runs, chckpts, final models, results etc.) will be stored.')
+parser.add_argument('--use_cuda', action='store_true', help='Sets the flag for training Ex2Vec on the GPU')
+parser.add_argument('--pretrain', action='store_true', help='Sets the flag for using a pretrained Ex2vec stored under pretrain_dir.')
+parser.add_argument('-pp', '--pretrain_path', type=str, default='./models/Ex2Vec_pretrained.pt', help='The filename of the the pretrained Ex2Vec model.')
+
 
 args = parser.parse_args() # store command line args into args variable
 
@@ -63,12 +68,13 @@ config = {
     "latent_dim": L_DIM,
     "num_negative": 0,
     "l2_regularization": L2_REG,
-    "use_cuda": True,
+    "use_cuda": args.use_cuda,
     "device_id": 0,
-    "pretrain": False,
-    "pretrain_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/Ex2Vec_pretrained.pt",
-    "model_dir": "/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/models/{}_Epoch{}_f1{:.4f}.pt",
-    "chckpt_dir":"/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/chckpts/{}_Epoch{}_f1{:.4f}.pt",
+    "pretrain": args.pretrain,
+    "pretrain_dir": args.pretrain_path,
+    "model_dir": args.base_path + 'models/{}_Epoch{}_f1{:.4f}.pt',
+    "chckpt_dir": args.base_path + 'chckpts/{}_Epoch{}_f1{:.4f}.pt',
+    "results_dir": args.base_path + 'results/best_models.csv'
 }
 
 print("Ex2Vec model is created with the following parameters for this run:\n")
@@ -76,7 +82,7 @@ for k,v in config.items():
   print(f'{k}:{v}')
 
 # initialize ex2vec engine with above configuration
-engine = Ex2VecEngine(config)
+engine = Ex2VecEngine(config, args.base_path)
 
 # prepare data
 train_loader = data_sampler.instance_a_train_loader(BS, args.use_dataset)
@@ -85,18 +91,13 @@ eval_data = data_sampler.evaluate_data(args.use_dataset)
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])
 
-#best_f1 = -torch.inf
 for epoch in range(config["num_epoch"]): # loop over epochs in config
     print("Epoch {} starts...".format(epoch))
     engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path) # train 1 epoch
     acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path) # calculate metrics
 
-    #curr_metric = f1
-
     if args.tuning == "N":
         engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}", args.embds_path) # save model chkpt
-    #if curr_metric > best_f1:
-         #best_f1 = curr_metric
 
 
 # logging all metrics + primary metric at the end of training run

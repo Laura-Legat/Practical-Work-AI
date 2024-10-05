@@ -147,12 +147,12 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
 class Ex2VecEngine(Engine):
     """Engine for training & evaluating MEE model"""
 
-    def __init__(self, config):
+    def __init__(self, config, ex2vec_path):
         self.model = Ex2Vec(config) # create new ex2vec model
         if config["use_cuda"] is True: # move it to GPU
             use_cuda(True, config["device_id"])
             self.model.cuda()
-        super(Ex2VecEngine, self).__init__(config) # initialize model
+        super(Ex2VecEngine, self).__init__(config, ex2vec_path) # initialize model
 
         if config["pretrain"]:
             self.model.load_pretrain_weights() # switch to pre-train mode
