@@ -9,7 +9,7 @@ from GRU4Rec_Fork import gru4rec_pytorch
 import json
 import optuna
 from collections import OrderedDict
-from utils import convert_to_param_str
+from GRU4Rec_Fork.gru4rec_utils import convert_to_param_str
 
 class MyHelpFormatter(argparse.HelpFormatter):
     def __init__(self, *args, **kwargs):

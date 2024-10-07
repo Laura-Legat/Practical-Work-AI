@@ -45,6 +45,7 @@ parser.add_argument('-ik', '--item_key', metavar='IK', type=str, default='ItemId
 parser.add_argument('-sk', '--session_key', metavar='SK', type=str, default='SessionId', help='Column name corresponding to the session IDs (default: SessionId).')
 parser.add_argument('-tk', '--time_key', metavar='TK', type=str, default='Time', help='Column name corresponding to the timestamp (default: Time).')
 parser.add_argument('-l', '--load_model', action='store_true', help='Load an already trained model instead of training a model. Mutually exclusive with the -ps (--parameter_string) and the -pf (--parameter_file) arguments and one of the three must be provided.')
+parser.add_argument('--optim', action='store_true', help='Sets the flag that this is hyperparameter tuning instead of normal training.')
 
 args = parser.parse_args() # store command line args into args variable
 
@@ -90,7 +91,7 @@ def generate_command(optimized_param_str) -> str:
     """
     command = ''
     if args.model == 'gru4rec':
-        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {} -s {}'.format(args.base_path + 'GRU4Rec_Fork/run.py', args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure, args.save_path)
+        command = 'python "{}" "{}" -t "{}" -ps {} -pm {} -lpm -e {} -ik {} -sk {} -tk {} -d {} -m {} -s {} {}'.format(args.base_path + 'GRU4Rec_Fork/run.py', args.path, args.test, optimized_param_str, args.primary_metric, args.eval_type, args.item_key, args.session_key, args.time_key, args.device, args.measure, args.save_path, '--optim' if args.optim else '')
     elif args.model == 'ex2vec':
         command = 'python "{}" -ep "{}" -ps {} -t {} -n {} -pth {}'.format(args.base_path + 'train.py', args.embds_path, optimized_param_str, "Y", args.alias, args.base_path)
         if args.use_cuda is True:
@@ -177,6 +178,10 @@ def objective(trial, par_space):
           'bacc': bacc
         }
         metrics_df = pd.DataFrame([all_metrics_log_dict])
+        temp_path = args.base_path + 'temp_metrics_ex2vec.csv'
+    
+        metrics_df.to_csv(temp_path, mode='a', header=not os.path.exists(temp_path), index=False)
+
     elif args.model == 'gru4rec':
         if len(all_metrics) > 0:
           log_dict = {
@@ -199,9 +204,10 @@ def objective(trial, par_space):
           
           metrics_df = pd.concat([trial_id_df, metrics_df], axis=1)
     
-    # save temporary metrics file as csv
-    temp_path = args.base_path + 'temp_metrics.csv'
-    metrics_df.to_csv(temp_path, mode='a', header=not os.path.exists(temp_path), index=False)
+          # save temporary metrics file as csv
+          temp_path = args.base_path + 'temp_metrics_gru4rec.csv'
+    
+          metrics_df.to_csv(temp_path, mode='a', header=not os.path.exists(temp_path), index=False)
 
     return primary_metric # return metric to optimize study for
 
@@ -259,9 +265,9 @@ new_res = {
 with open(args.output_path, 'w') as f:
     f.write(json.dumps(new_res, indent=4) + '\n')
 
-# save info about current study
+# get current trials df
 trials_df = study.trials_dataframe()
-trials_df_copy = trials_df.copy()
+trials_df_copy = trials_df.copy() 
 
 optuna_vis_csv_path = args.optuna_vis_csv # path for the optuna vis file containing trial information from previous runs
 
@@ -271,7 +277,7 @@ if os.path.exists(optuna_vis_csv_path): # if ths trials csv already exists, aka 
     trials_df_copy = pd.concat([optuna_vis_csv, new_trials], ignore_index=True) # concatinate new rows to new trails df
 
 #read out temp file all metrics and based on trial number, assign the col values
-temp_path = args.base_path + 'temp_metrics.csv'
+temp_path = args.base_path + 'temp_metrics_gru4rec.csv' if args.model == 'gru4rec' else args.base_path + 'temp_metrics_ex2vec.csv'
 if os.path.exists(temp_path) and os.path.getsize(temp_path) >0:
     metrics_temp_df = pd.read_csv(temp_path)
     metrics_temp_df['search_space_id'] = search_space_id # add the used search space to the current trial
@@ -287,7 +293,7 @@ trials_df_copy = trials_df_copy.drop(columns=['trial_id']) # drop redundant tria
 if os.path.exists(optuna_vis_csv_path):
     trials_df_copy = trials_df_copy.drop(columns=['Unnamed: 0']) # drop redundant trial info after merge of new and old
 
-    # combine new ald old columns into the same columns
+    # combine new and old columns into the same columns
     if args.model == 'ex2vec':
       if args.embds_path == '':
           for col in ['acc', 'recall', 'f1', 'bacc', 'search_space_id']:
@@ -314,8 +320,17 @@ if os.path.exists(optuna_vis_csv_path):
 # save updates trial info csv
 trials_df_copy.to_csv(args.optuna_vis_csv)
 
-#delete temporary metrics file
-os.remove(temp_path)
+# empty temporary file
+metrics_temp_df = metrics_temp_df.head(0)
+# drop previous cols
+#metrics_temp_df = metrics_temp_df.drop(metrics_temp_df.columns[0], axis=1) 
+#metrics_temp_df = metrics_temp_df.drop('search_space_id', axis=1)
+metrics_temp_df.to_csv(temp_path, index=False)
+metrics_temp_df_cleaned = pd.read_csv(temp_path, index_col=False)
+#metrics_temp_df_cleaned = metrics_temp_df_cleaned.drop(metrics_temp_df_cleaned.columns[0], axis=1)
+metrics_temp_df_cleaned = metrics_temp_df_cleaned.drop('search_space_id', axis=1)
+
+metrics_temp_df_cleaned.to_csv(temp_path, index=False)
 
 # save current study for visualizations
 with open(args.optuna_vis_pkl, 'wb') as f:
