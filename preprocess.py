@@ -82,7 +82,8 @@ if args.small_version == 'Y':
 
 # SPLIT EACH USER HISTORY INTO TRAIN-VAL-TEST 70-10-20 %
 # get user histories and group each of them by timestamp
-df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'), include_groups=False)
+#df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'), include_groups=False)
+df_user_histories = filtered_df.groupby('userId', group_keys=False).apply(lambda x: x.sort_values('timestamp'))
 
 # create structures for storing the rows belonging to the splits
 train_rows = []
