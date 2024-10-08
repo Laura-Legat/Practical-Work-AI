@@ -32,7 +32,8 @@ class InteractionDataset(Dataset):
         return self.user_tensor.size(0)
 
 
-DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
+#DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
+DATA_PATH = './data/'
 orig_data = DATA_PATH + 'processed.csv'
 
 # read processed.csv into pandas dataframe while converting  relational_interval from string to python list bc some are saved as strings
