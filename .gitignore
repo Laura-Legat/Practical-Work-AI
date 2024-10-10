@@ -7,6 +7,8 @@ data/seq_val.csv
 data/seq_test.csv
 data/seq_combined.csv
 data/ORIG_1000/
+data/data_full/
+data/data_1000/
 data/.ipynb_checkpoints/
 dist/
 explanations/
