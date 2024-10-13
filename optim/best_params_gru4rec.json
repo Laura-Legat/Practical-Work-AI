@@ -1,20 +1,20 @@
 {
     "n_trials": 1,
     "best_params": {
-        "loss": "cross-entropy",
+        "loss": "bpr-max",
         "constrained_embedding": false,
         "embedding": 0,
         "elu_param": 0,
         "layers": 64,
         "n_epochs": 10,
-        "batch_size": 320,
-        "dropout_p_embed": 0.5,
-        "dropout_p_hidden": 0.7,
-        "learning_rate": 0.1,
-        "momentum": 0.4,
-        "n_sample": 1024,
-        "sample_alpha": 0.7000000000000001,
-        "bpreg": 1.0,
+        "batch_size": 336,
+        "dropout_p_embed": 0.30000000000000004,
+        "dropout_p_hidden": 0.1,
+        "learning_rate": 0.05,
+        "momentum": 0.7,
+        "n_sample": 512,
+        "sample_alpha": 0.0,
+        "bpreg": 0.5,
         "logq": 0.0
     }
 }
