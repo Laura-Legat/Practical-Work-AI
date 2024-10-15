@@ -7,13 +7,13 @@
         "elu_param": 0,
         "layers": 64,
         "n_epochs": 10,
-        "batch_size": 336,
-        "dropout_p_embed": 0.30000000000000004,
-        "dropout_p_hidden": 0.1,
+        "batch_size": 512,
+        "dropout_p_embed": 0.2,
+        "dropout_p_hidden": 0.0,
         "learning_rate": 0.05,
         "momentum": 0.7,
         "n_sample": 512,
-        "sample_alpha": 0.0,
+        "sample_alpha": 0.2,
         "bpreg": 0.5,
         "logq": 0.0
     }
