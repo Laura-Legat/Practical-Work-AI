@@ -19,5 +19,4 @@ combined_train.py
 ideas.txt
 TODOS.txt
 optim/*.db
-optim/*.pkl
 pr_ext.egg-info/
