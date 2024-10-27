@@ -73,7 +73,7 @@ filtered_df = filtered_df[filtered_df['itemId'].isin(valid_idem_ids)]
 if args.small_version == 'Y':
     np.random.seed(1234) # set seed such that sampling is the same for testing across devices
     # sample some random unique userIDs
-    selected_user_ids = np.random.choice(filtered_df['userId'], size=args.n_users, replace=False)
+    selected_user_ids = np.random.choice(filtered_df['userId'].unique(), size=args.n_users, replace=False)
     df_sm = filtered_df[filtered_df['userId'].isin(selected_user_ids)]
 
     # resort new dataframe

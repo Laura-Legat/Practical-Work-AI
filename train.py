@@ -17,7 +17,7 @@ class MyHelpFormatter(argparse.HelpFormatter):
         self._width = shutil.get_terminal_size().columns
 
 parser = argparse.ArgumentParser(formatter_class=MyHelpFormatter, description='Train an Ex2Vec model.')
-parser.add_argument('-ep', '--embds_path', type=str, default='', help='Path to the GRU4Rec trained model')
+parser.add_argument('-ep', '--embds_path', type=str, default=None, help='Path to the GRU4Rec trained model')
 parser.add_argument('-ps', '--param_str', type=str, default=None, help='Parameters to optimize, or to train with.')
 parser.add_argument('-pf', '--param_file', type=str, default=None, help='File where the parameters are stored.')
 parser.add_argument('-t', '--tuning', type=str, default="N", help='Set whether this is a run with or without hyperparameter tuning.')
@@ -88,13 +88,18 @@ engine = Ex2VecEngine(config, args.base_path)
 train_loader = data_sampler.instance_a_train_loader(BS, args.use_dataset)
 eval_data = data_sampler.evaluate_data(args.use_dataset)
 
+# if -ep flag is set, load GRU4Rec weights and pass to ex2vec training
+if args.embds_path:
+    gru4rec_loaded = torch.load(args.embds_path, weights_only=False)
+    item_embds = gru4rec_loaded.model.Wy.weight.data
+
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])
 
 for epoch in range(config["num_epoch"]): # loop over epochs in config
     print("Epoch {} starts...".format(epoch))
-    engine.train_an_epoch(train_loader, epoch_id=epoch, embds_path=args.embds_path) # train 1 epoch
-    acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, embds_path=args.embds_path) # calculate metrics
+    engine.train_an_epoch(train_loader, epoch_id=epoch, item_embds=item_embds) # train 1 epoch
+    acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, item_embds=args.embds_path) # calculate metrics
 
     if args.tuning == "N":
         engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}", args.embds_path) # save model chkpt

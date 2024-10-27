@@ -19,7 +19,7 @@ class Engine(object):
         self.crit = torch.nn.BCELoss() # defining loss function as Binary cross entropy, used for binary classification tasks
 
     # for a single batch that is passed to the function, move tensors to GPU, perform one training step, clip grads, and return loss
-    def train_single_batch(self, users, items, rel_int, interest, embds_path):
+    def train_single_batch(self, users, items, rel_int, interest, item_embds):
         if self.config["use_cuda"] is True: # move all tensors onto GPU
             users, items, rel_int, interest = (
                 users.cuda(),
@@ -28,7 +28,7 @@ class Engine(object):
                 interest.cuda(),
             )
         self.opt.zero_grad() # clear grads of tensors 
-        rating_pred, _ = self.model(users, items, rel_int, embds_path=embds_path) # forward pass to get interest
+        rating_pred, _ = self.model(users, items, rel_int, item_embds=item_embds) # forward pass to get interest
         loss = self.crit(rating_pred.view(-1), interest) # compare predicted with actual interest values
 
         loss.backward() # grad backprop
@@ -51,19 +51,19 @@ class Engine(object):
         loss = loss.item() # converts loss value to python scalar and return it
         return loss
 
-    def train_an_epoch(self, train_loader, epoch_id, embds_path): # train all the batches for one epoch
+    def train_an_epoch(self, train_loader, epoch_id, item_embds): # train all the batches for one epoch
         self.model.train() # put model into training mode, enabling grad computation
         total_loss = 0
         for batch_id, batch in tqdm(enumerate(train_loader),total=len(train_loader)):
             assert isinstance(batch[0], torch.LongTensor) # WHY
             user, item, rel_int, interest = batch[0], batch[1], batch[2], batch[3]
             interest = interest.float()
-            loss = self.train_single_batch(user, item, rel_int, interest, embds_path=embds_path)
+            loss = self.train_single_batch(user, item, rel_int, interest, item_embds=item_embds)
             #print("[epoch {}] batch {}, loss: {}".format(epoch_id, batch_id, loss))
             total_loss += loss
         self._writer.add_scalar("model/loss", total_loss, epoch_id) # log total loss for one whole epoch
 
-    def evaluate(self, eval_data, epoch_id, embds_path):
+    def evaluate(self, eval_data, epoch_id, item_embds):
         self.model.eval()
         with torch.no_grad(): 
             # move all test data to GPU
@@ -78,7 +78,7 @@ class Engine(object):
                 test_items = test_items.cuda()
                 test_rel_int = test_rel_int.cuda()
                 test_y = test_y.cuda()
-            test_scores, distance = self.model(test_users, test_items, test_rel_int, embds_path) #forward pass with test set to get interest scores
+            test_scores, distance = self.model(test_users, test_items, test_rel_int, item_embds=item_embds) #forward pass with test set to get interest scores
 
             if self.config["use_cuda"] is False: # move to cpu if cuda not available
                 test_users = test_users.cpu()
