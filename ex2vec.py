@@ -5,7 +5,9 @@ import torch
 from engine import Engine
 from utils import resume_checkpoint, use_cuda
 from data_sampler import get_userId_from_mapping, get_itemId_from_mapping
-
+import sys
+#sys.path.append('/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/GRU4Rec_Fork/')
+sys.path.append('./GRU4Rec_Fork/')
 
 # Ex2Vec Class
 class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model 
@@ -54,17 +56,16 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         )
 
         self.logistic = torch.nn.Sigmoid()
+        self.tanh = torch.nn.Tanh() # define alternative activation fct for comb3
 
-    def forward(self, user_indices, item_indices, r_interval, embds_path=''):
+    def forward(self, user_indices, item_indices, r_interval, item_embds=None, use_tanh=False):
         # calculate u and v for first formula
         # retrieve embedding vectors for each idx in user_indices -> fetch corresponding rows from embedding matrix, e.g. for user_idx=3, it fetches the 3rd user embedding
         user_embeddings = self.embedding_user(user_indices)
 
-        if embds_path != '': # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
-            all_item_embds = self.load_GRU4Rec_weights(embds_path) # load item mapping and item embeddings 
-
-            all_item_embds.requires_grad_(False) # freeze gru4rec item embds
-            item_embeddings = all_item_embds[item_indices]
+        if item_embds: # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
+            item_embds.requires_grad_(False) # freeze gru4rec item embds
+            item_embeddings = item_embds[item_indices]
         else:
             item_embeddings = self.embedding_item(item_indices)
 
@@ -105,8 +106,10 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         # formula 2 from paper: alpha * d_u,i + beta * d_u,i^2 + gamma + bias
         I = self.alpha * distance  + self.beta * torch.pow(distance, 2) + self.gamma + u_bias + i_bias
 
-        # output the interest value between 0 and 1
-        interest = self.logistic(I)
+        if use_tanh:
+            interest = self.tanh(I)
+        else:
+            interest = self.logistic(I)
         return interest, distance
 
     def load_pretrain_weights(self):
@@ -129,20 +132,6 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         self.beta.data = ex2vec_pre.beta.data
         self.alpha.data = ex2vec_pre.alpha.data
         self.global_lamb.data = ex2vec_pre.global_lamb.data
-
-    def load_GRU4Rec_weights(self, GRU4Rec_path:str):
-        """
-        Sets up extracted item embeddings from pre-trained GRU4Rec as part of Ex2Vec pipeline.
-
-        Args:
-        GRU4Rec_path: The file path where the pre-trained GRU4Rec model resides
-
-        Returns:
-        item_embeds: Pre-trained item embeddings -> Tensor
-        """
-        model_loaded = torch.load(GRU4Rec_path, weights_only=False) # load GRU4Rec model from state dict
-        item_embeds = model_loaded.model.Wy.weight.data # get item embedding data
-        return item_embeds
 
 class Ex2VecEngine(Engine):
     """Engine for training & evaluating MEE model"""
