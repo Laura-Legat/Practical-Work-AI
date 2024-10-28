@@ -92,6 +92,7 @@ eval_data = data_sampler.evaluate_data(args.use_dataset)
 if args.embds_path:
     gru4rec_loaded = torch.load(args.embds_path, weights_only=False)
     item_embds = gru4rec_loaded.model.Wy.weight.data
+    item_embds.requires_grad_(False) # freeze item embds
 
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])
@@ -99,7 +100,7 @@ print("Started training model: ", config["alias"])
 for epoch in range(config["num_epoch"]): # loop over epochs in config
     print("Epoch {} starts...".format(epoch))
     engine.train_an_epoch(train_loader, epoch_id=epoch, item_embds=item_embds) # train 1 epoch
-    acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, item_embds=args.embds_path) # calculate metrics
+    acc, recall, f1, bacc = engine.evaluate(eval_data, epoch_id=epoch, item_embds=item_embds) # calculate metrics
 
     if args.tuning == "N":
         engine.save(config["alias"], epoch, f1, args.param_str, f"acc={acc}, recall={recall}, f1={f1}, bacc={bacc}", args.embds_path) # save model chkpt
