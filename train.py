@@ -93,6 +93,8 @@ if args.embds_path:
     gru4rec_loaded = torch.load(args.embds_path, weights_only=False)
     item_embds = gru4rec_loaded.model.Wy.weight.data
     item_embds.requires_grad_(False) # freeze item embds
+else:
+  item_embds=None
 
 # indicate start of training + current configuration
 print("Started training model: ", config["alias"])

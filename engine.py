@@ -123,7 +123,7 @@ class Engine(object):
           # write model data (alias, params, metrics) to table
           new_row = {
               'model_name': [alias],
-              'item_embds': [os.path.basename(embds_path).split('.')[0]] if embds_path != '' else ['ex2vec'],
+              'item_embds': [os.path.basename(embds_path).split('.')[0]] if embds_path != None else ['ex2vec'],
               'params': [param_str],
               'results': [metric_str]
           }
