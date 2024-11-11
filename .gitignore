@@ -13,7 +13,6 @@ data/.ipynb_checkpoints/
 dist/
 explanations/
 models/
-runs/
 trialdumps/
 combined_train.py
 ideas.txt
