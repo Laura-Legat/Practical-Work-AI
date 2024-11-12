@@ -20,4 +20,3 @@ TODOS.txt
 pr_ext.egg-info/
 data/data_1000/
 optim/*.db
-runs/
