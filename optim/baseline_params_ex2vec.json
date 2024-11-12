@@ -1,0 +1,11 @@
+{
+    "n_trials": 1,
+    "best_params": {
+        "num_epoch": 100,
+        "batch_size": 512,
+        "learning_rate": 5e-5,
+        "rmsprop_alpha": 0.99,
+        "momentum": 0,
+        "l2_regularization": 0.001
+    }
+}
