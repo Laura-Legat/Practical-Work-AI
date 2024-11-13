@@ -18,3 +18,4 @@ dependencies:
   - matplotlib=3.7.1
   - seaborn=0.13.1
   - setuptools=71.0.4
+  - h5py=3.12.1
