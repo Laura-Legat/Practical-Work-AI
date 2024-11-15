@@ -45,8 +45,8 @@ config = config = {
     "lr": float(ex2vec_config['learning_rate']),
     "rmsprop_alpha": float(ex2vec_config['rmsprop_alpha']),
     "momentum": float(ex2vec_config['momentum']),
-    "n_users": 100, # 3623
-    "n_items": 728, # 879
+    "n_users": 3623, # 3623
+    "n_items": 879, # 879
     "latent_dim": 64,
     "num_negative": 0,
     "l2_regularization": float(ex2vec_config['l2_regularization']),
