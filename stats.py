@@ -26,6 +26,9 @@ if 'SessionId' in df:
 	unique_n_sess_per_user = df.groupby('userId')['SessionId'].nunique()
 	print('Avg unique windows per user: ', round(unique_n_sess_per_user.mean(), 1))
 else:
+	user_interactions_per_class = df.groupby('y').size().reset_index(name='n_interactions')
+	print('Avg. interactions per class: ', user_interactions_per_class)
+	
 	user_interaction_counts = df.groupby('userId').size()
 	avg_user_counts = user_interaction_counts.mean()
 
