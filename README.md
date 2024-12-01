@@ -45,7 +45,7 @@ Perform hyperparameter optimization for any number of trials for either of the m
 
 ## Training
 
-Train/finaltrain Ex2Vec by running the `train.py` script. Similarly, train GRU4Rec by running the `run.py` script located in the `GRU4Rec_Fork` submodule folder. Please refer to the argparse documentation within the script for further information on the flags.
+Train/finaltrain Ex2Vec by running the `train.py` script. Similarly, train GRU4Rec by running the `run.py` script located in the `GRU4Rec_Fork` submodule folder. Please refer to the argparse documentation within the script for further information on the flags. Resulting models will either be stored as checkpoints in their respective `chckpts` subdirectories (any checkpoint models during training), or in the `models` subdirectory (final model). For Ex2Vec, tensorboard information will be stored in the `/runs/` subdirectory.
 
 ## Combination ideas
 
