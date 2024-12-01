@@ -41,11 +41,15 @@ The `-sl` flag is the sequence length, `-st` the stride. Feel free to adapt thes
 
 ## Hyperparameter optimization
 
-Perform hyperparameter optimization for any number of trials for either of the models with the `optuna_paropt.py` script
+Perform hyperparameter optimization for any number of trials for either of the models with the `optuna_paropt.py` script. Please refer to the argparse documentation within the script for further information on the flags.
 
 ## Training
 
-Train/finaltrain Ex2Vec by running the `train.py` script. Similarly, train GRU4Rec by running the `run.py` script located in the `GRU4Rec_Fork` submodule folder.
+Train/finaltrain Ex2Vec by running the `train.py` script. Similarly, train GRU4Rec by running the `run.py` script located in the `GRU4Rec_Fork` submodule folder. Please refer to the argparse documentation within the script for further information on the flags.
+
+## Combination ideas
+
+Combination idea 1 and 3 can be run via their respetive scripts located in the root folder. Combination idea 2 can be run by adding the `-ep` flag when executing `train.py` to specify a GRU4Rec model path.
 
 ## Dataset
 The dataset is provided [here](https://zenodo.org/record/8316236).
