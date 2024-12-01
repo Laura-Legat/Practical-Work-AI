@@ -49,10 +49,10 @@ Train/finaltrain Ex2Vec by running the `train.py` script. Similarly, train GRU4R
 
 ## Combination ideas
 
-Combination idea 1 and 3 can be run via their respetive scripts located in the root folder. Combination idea 2 can be run by adding the `-ep` flag when executing `train.py` to specify a GRU4Rec model path.
+Combination idea 1 and 3 can be run via their respetive scripts located in the root folder. Combination idea 2 can be run by adding the `-ep` flag when executing `train.py` to specify a GRU4Rec model path. Please refer to the argparse documentation within the script for further information on the flags.
 
 ## Dataset
-The dataset is provided [here](https://zenodo.org/record/8316236).
+The dataset (new_release_stream.csv) is provided [here](https://zenodo.org/record/8316236).
 
 ## References
 
@@ -63,4 +63,8 @@ The dataset is provided [here](https://zenodo.org/record/8316236).
   booktitle = {Proceedings of the 17th ACM Conference on Recommender Systems},
   year = {2023}
 }
+
+Balázs Hidasi, Alexandros Karatzoglou, Linas Baltrunas, Domonkos Tikk: Session-based Recommendations with Recurrent Neural Networks. arXiv preprint arXiv:1511.06939, 2015. https://arxiv.org/abs/1511.06939 Presented at the 4th International Conference on Learning Representations, ICLR 2016.
+
+Balázs Hidasi, Alexandros Karatzoglou: Recurrent Neural Networks with Top-k Gains for Session-based Recommendations. arXiv preprint arXiv:1706.03847, 2017. https://arxiv.org/abs/1706.03847
 ```
