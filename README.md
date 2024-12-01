@@ -37,11 +37,11 @@ Via this command (executed from the root folder):
 
 `python preprocess.py -sl 50 -st 1`
 
-The `-sl` flag is the sequence length, `-st` the stride. Feel free to adapt these to your liking.
+The `-sl` flag is the sequence length, `-st` the stride. Feel free to adapt these to your liking. The output files will be stores in the `/data/` subdirectory.
 
 ## Hyperparameter optimization
 
-Perform hyperparameter optimization for any number of trials for either of the models with the `optuna_paropt.py` script. Please refer to the argparse documentation within the script for further information on the flags.
+Perform hyperparameter optimization for any number of trials for either of the models with the `optuna_paropt.py` script. Please refer to the argparse documentation within the script for further information on the flags. The best parameters as well as trial information will be stored in the `/optim/` subdirectory. For this step to work, please create `ex2vec_search_space.csv` and `gru4rec_search_space.csv` files beforehand. Search space, optuna visualization as well as best trained model visualization information will eb stored in the `/results/` subdirectory.
 
 ## Training
 
