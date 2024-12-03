@@ -31,8 +31,6 @@ class InteractionDataset(Dataset):
     def __len__(self):
         return self.user_tensor.size(0)
 
-
-#DATA_PATH = '/content/drive/MyDrive/JKU/practical_work/Practical-Work-AI/data/'
 DATA_PATH = './data/'
 orig_data = DATA_PATH + 'processed.csv'
 

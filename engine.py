@@ -59,7 +59,6 @@ class Engine(object):
             user, item, rel_int, interest = batch[0], batch[1], batch[2], batch[3]
             interest = interest.float()
             loss = self.train_single_batch(user, item, rel_int, interest, item_embds=item_embds)
-            #print("[epoch {}] batch {}, loss: {}".format(epoch_id, batch_id, loss))
             total_loss += loss
         self._writer.add_scalar("model/loss", total_loss, epoch_id) # log total loss for one whole epoch
 

@@ -323,11 +323,8 @@ trials_df_copy.to_csv(args.optuna_vis_csv)
 # empty temporary file
 metrics_temp_df = metrics_temp_df.head(0)
 # drop previous cols
-#metrics_temp_df = metrics_temp_df.drop(metrics_temp_df.columns[0], axis=1) 
-#metrics_temp_df = metrics_temp_df.drop('search_space_id', axis=1)
 metrics_temp_df.to_csv(temp_path, index=False)
 metrics_temp_df_cleaned = pd.read_csv(temp_path, index_col=False)
-#metrics_temp_df_cleaned = metrics_temp_df_cleaned.drop(metrics_temp_df_cleaned.columns[0], axis=1)
 metrics_temp_df_cleaned = metrics_temp_df_cleaned.drop('search_space_id', axis=1)
 
 metrics_temp_df_cleaned.to_csv(temp_path, index=False)
