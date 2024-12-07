@@ -63,8 +63,7 @@ class Ex2Vec(torch.nn.Module): # Ex2Vec neural network model
         # retrieve embedding vectors for each idx in user_indices -> fetch corresponding rows from embedding matrix, e.g. for user_idx=3, it fetches the 3rd user embedding
         user_embeddings = self.embedding_user(user_indices)
 
-        if item_embds: # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
-            item_embds.requires_grad_(False) # freeze gru4rec item embds
+        if item_embds != None: # if there is a GRU4Rec model given, use the GRU4Rec item embeddings
             item_embeddings = item_embds[item_indices]
         else:
             item_embeddings = self.embedding_item(item_indices)
