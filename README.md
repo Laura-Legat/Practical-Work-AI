@@ -56,6 +56,11 @@ The dataset (new_release_stream.csv) is provided [here](https://zenodo.org/recor
 
 ## References
 
+- [Official README of Ex2Vec repository](https://github.com/Laura-Legat/Practical-Work-AI/blob/main/README_ex2vec.md)
+- [Official README of GRU4Rec PyTorch implementation repository](https://github.com/Laura-Legat/GRU4Rec_Practical_Work/tree/15993f57ca01e4d9356ef05cc842b74a96404fcd)
+- [Official README of GRU4Rec Theano implementation repository](https://github.com/hidasib/GRU4Rec)
+
+
 ```
 @inproceedings{sguerra2023ex2vec,
   title={Ex2Vec: Characterizing Users and Items from the Mere Exposure Effect},
